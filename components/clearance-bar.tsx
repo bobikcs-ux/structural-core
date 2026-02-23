@@ -44,16 +44,16 @@ export function ClearanceBar() {
 }
 
 function LiveClock() {
-  const [time, setTime] = useState(() =>
-    new Date().toISOString().replace("T", " // ").slice(0, 24) + "Z"
-  )
+  const [time, setTime] = useState("--:--:--")
   useEffect(() => {
-    const id = setInterval(() => {
+    function tick() {
       setTime(new Date().toISOString().replace("T", " // ").slice(0, 24) + "Z")
-    }, 1000)
+    }
+    tick()
+    const id = setInterval(tick, 1000)
     return () => clearInterval(id)
   }, [])
-  return <>{time}</>
+  return <span suppressHydrationWarning>{time}</span>
 }
 
 function LiveStatus({ health }: { health?: { connected: boolean; latency: number; lastUpdate: number } | null }) {

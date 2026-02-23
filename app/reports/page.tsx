@@ -105,9 +105,13 @@ export default function ReportsPage() {
                   <div className="px-4 py-3 text-xs text-muted font-mono tabular-nums self-center">{report.timestamp}</div>
                   <div className="px-4 py-3 text-xs text-gold font-mono self-center">{report.hash}</div>
                   <div className="px-4 py-3 self-center text-right">
-                    <button className="text-[10px] tracking-wider uppercase px-3 py-1 border border-border text-muted hover:text-foreground hover:bg-surface transition-colors">
-                      PDF
-                    </button>
+                    <a
+                      href={`/api/report?title=${encodeURIComponent(report.title)}&version=${encodeURIComponent(report.version)}&hash=${encodeURIComponent(report.hash)}&timestamp=${encodeURIComponent(report.timestamp)}&category=${encodeURIComponent(report.category)}`}
+                      download
+                      className="text-[10px] tracking-wider uppercase px-3 py-1 border border-border text-muted hover:text-foreground hover:bg-surface transition-colors inline-block"
+                    >
+                      Download
+                    </a>
                   </div>
                 </div>
               ))}
@@ -125,9 +129,13 @@ export default function ReportsPage() {
                       {report.category} -- {report.version}
                     </div>
                   </div>
-                  <button className="text-[10px] tracking-wider uppercase px-3 py-1 border border-border text-muted hover:text-foreground shrink-0">
-                    PDF
-                  </button>
+                  <a
+                    href={`/api/report?title=${encodeURIComponent(report.title)}&version=${encodeURIComponent(report.version)}&hash=${encodeURIComponent(report.hash)}&timestamp=${encodeURIComponent(report.timestamp)}&category=${encodeURIComponent(report.category)}`}
+                    download
+                    className="text-[10px] tracking-wider uppercase px-3 py-1 border border-border text-muted hover:text-foreground shrink-0 inline-block"
+                  >
+                    Download
+                  </a>
                 </div>
                 <div className="flex items-center gap-4 text-[10px] text-muted">
                   <span className="font-mono tabular-nums">{report.timestamp}</span>

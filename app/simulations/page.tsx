@@ -69,11 +69,20 @@ export default function SimulationsPage() {
   const [duration, setDuration] = useState(30)
   const [result, setResult] = useState<SimResult | null>(null)
   const [running, setRunning] = useState(false)
+  const [progress, setProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
   const handleRun = useCallback(async () => {
     setRunning(true)
+    setProgress(0)
     setError(null)
+
+    // Animate progress bar
+    const steps = 20
+    const interval = setInterval(() => {
+      setProgress((p) => Math.min(p + (100 / steps), 95))
+    }, 100)
+
     try {
       const res = await runStructuralSnapshot({
         shockMagnitude: magnitude,
@@ -82,8 +91,12 @@ export default function SimulationsPage() {
         liquidityFloor: 0.5,
         reserveRatio: 0.8,
       })
+      clearInterval(interval)
+      setProgress(100)
       setResult(res)
     } catch (err) {
+      clearInterval(interval)
+      setProgress(0)
       setError(err instanceof Error ? err.message : "Simulation failed")
     } finally {
       setRunning(false)
@@ -171,6 +184,22 @@ export default function SimulationsPage() {
             >
               {running ? "Executing Simulation..." : "Run Simulation"}
             </button>
+
+            {/* Progress bar */}
+            {running && (
+              <div className="mt-4">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] text-muted tracking-wider uppercase">Processing</span>
+                  <span className="text-[10px] text-gold font-mono tabular-nums">{Math.round(progress)}%</span>
+                </div>
+                <div className="w-full h-px bg-border">
+                  <div
+                    className="h-full bg-gold transition-all duration-100"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Error */}

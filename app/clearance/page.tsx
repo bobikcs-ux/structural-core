@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
+import { createClient } from "@/lib/supabase/client"
 
 const RISK_DOMAINS = [
   "Sovereign Risk", "Structural Integrity", "Governance Audit",
@@ -11,10 +12,49 @@ const RISK_DOMAINS = [
 
 export default function ClearancePage() {
   const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [requestHash, setRequestHash] = useState("")
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    setSubmitted(true)
+    setSubmitting(true)
+    setError(null)
+
+    const fd = new FormData(e.currentTarget)
+    const institution = fd.get("institution") as string
+    const jurisdiction = fd.get("jurisdiction") as string
+    const aum = fd.get("aum") as string
+    const risk_domain = fd.get("risk_domain") as string
+    const intended_use = fd.get("intended_use") as string
+    const email = fd.get("email") as string
+
+    // Generate request hash
+    const encoder = new TextEncoder()
+    const data = encoder.encode(`${institution}:${email}:${Date.now()}`)
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data)
+    const hashArray = Array.from(new Uint8Array(hashBuffer))
+    const hash = "0x" + hashArray.slice(0, 12).map(b => b.toString(16).padStart(2, "0")).join("")
+
+    try {
+      const supabase = createClient()
+      const { error: dbError } = await supabase.from("clearance_requests").insert({
+        institution,
+        jurisdiction,
+        aum,
+        risk_domain,
+        intended_use,
+        email,
+        request_hash: hash,
+      })
+      if (dbError) throw dbError
+      setRequestHash(hash)
+      setSubmitted(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Submission failed")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -33,18 +73,22 @@ export default function ClearancePage() {
           </p>
 
           {submitted ? (
-            <div className="border border-border p-8 text-center">
-              <div className="text-[10px] text-gold tracking-[0.2em] uppercase mb-3">Request Submitted</div>
+            <div className="border border-border p-8">
+              <div className="text-[10px] text-gold tracking-[0.2em] uppercase mb-4">Request Submitted</div>
               <div className="text-sm text-foreground mb-2">
                 Your clearance request has been received and queued for review.
               </div>
-              <div className="text-xs text-muted">
+              <div className="text-xs text-muted mb-4">
                 You will be contacted at the provided email address once your request
                 has been processed through the institutional verification pipeline.
               </div>
+              <div className="border border-border p-3 mb-6">
+                <div className="text-[10px] text-muted tracking-wider uppercase mb-1">Request Hash</div>
+                <div className="text-xs text-gold font-mono">{requestHash}</div>
+              </div>
               <button
-                onClick={() => setSubmitted(false)}
-                className="mt-6 text-xs tracking-wider uppercase px-4 py-2 border border-border text-muted hover:text-foreground hover:bg-surface transition-colors"
+                onClick={() => { setSubmitted(false); setRequestHash(""); setError(null) }}
+                className="text-xs tracking-wider uppercase px-4 py-2 border border-border text-muted hover:text-foreground hover:bg-surface transition-colors"
               >
                 Submit Another Request
               </button>
@@ -52,11 +96,18 @@ export default function ClearancePage() {
           ) : (
             <form onSubmit={handleSubmit} className="border border-border">
               <div className="p-6 flex flex-col gap-5">
+                {error && (
+                  <div className="border border-danger p-3">
+                    <span className="text-xs text-danger">{error}</span>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-[10px] text-muted tracking-wider uppercase mb-1.5">
                     Institution Name
                   </label>
                   <input
+                    name="institution"
                     type="text"
                     required
                     placeholder="Legal entity name"
@@ -69,6 +120,7 @@ export default function ClearancePage() {
                     Jurisdiction
                   </label>
                   <input
+                    name="jurisdiction"
                     type="text"
                     required
                     placeholder="Primary regulatory jurisdiction"
@@ -81,6 +133,7 @@ export default function ClearancePage() {
                     Assets Under Management
                   </label>
                   <input
+                    name="aum"
                     type="text"
                     required
                     placeholder="e.g. $500M - $1B"
@@ -93,6 +146,7 @@ export default function ClearancePage() {
                     Risk Domain
                   </label>
                   <select
+                    name="risk_domain"
                     required
                     className="w-full bg-surface border border-border text-foreground text-sm px-3 py-2.5 outline-none focus:border-gold"
                   >
@@ -108,6 +162,7 @@ export default function ClearancePage() {
                     Intended Use
                   </label>
                   <textarea
+                    name="intended_use"
                     required
                     rows={3}
                     placeholder="Describe the intended use of institutional access"
@@ -120,6 +175,7 @@ export default function ClearancePage() {
                     Email
                   </label>
                   <input
+                    name="email"
                     type="email"
                     required
                     placeholder="institutional.contact@example.com"
@@ -131,9 +187,14 @@ export default function ClearancePage() {
               <div className="border-t border-border p-6">
                 <button
                   type="submit"
-                  className="text-xs tracking-wider uppercase px-6 py-2.5 bg-gold text-background font-medium hover:bg-gold-dim transition-colors"
+                  disabled={submitting}
+                  className={`text-xs tracking-wider uppercase px-6 py-2.5 font-medium transition-colors ${
+                    submitting
+                      ? "bg-surface text-muted border border-border"
+                      : "bg-gold text-background hover:bg-gold-dim"
+                  }`}
                 >
-                  Request Institutional Access
+                  {submitting ? "Submitting..." : "Request Institutional Access"}
                 </button>
               </div>
             </form>
