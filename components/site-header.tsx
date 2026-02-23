@@ -6,9 +6,10 @@ import { useState } from "react"
 
 const NAV_LINKS = [
   { href: "/intelligence", label: "Intelligence" },
+  { href: "/scanner", label: "Scanner" },
   { href: "/simulations", label: "Simulations" },
   { href: "/reports", label: "Reports" },
-  { href: "/clearance", label: "Clearance" },
+  { href: "/clearance", label: "Access" },
   { href: "/app", label: "Console" },
 ]
 
@@ -18,7 +19,10 @@ export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false)
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 backdrop-blur-sm" style={{ backgroundColor: "rgba(0,0,0,0.95)" }}>
+    <header
+      className="fixed top-0 left-0 right-0 z-50 border-b border-white/10"
+      style={{ backgroundColor: "#000000" }}
+    >
       <div className="mx-auto max-w-7xl flex items-center justify-between px-6 h-14">
         <Link href="/" className="flex items-center gap-3">
           <span className="text-sm font-semibold tracking-[0.08em] uppercase text-foreground">
@@ -31,24 +35,21 @@ export function SiteHeader() {
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-1" aria-label="Main navigation">
-          {NAV_LINKS.map((link) => {
-            const isActive = pathname === link.href
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`
-                  text-xs tracking-wider uppercase px-3 py-1.5 transition-colors
-                  ${isActive
-                    ? "text-gold"
-                    : "text-muted hover:text-foreground"
-                  }
-                `}
-              >
-                {link.label}
-              </Link>
-            )
-          })}
+          {NAV_LINKS.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`
+                text-xs tracking-wider uppercase px-3 py-1.5 transition-colors
+                ${pathname === link.href || (link.href !== "/" && pathname?.startsWith(link.href))
+                  ? "text-gold"
+                  : "text-muted hover:text-foreground"
+                }
+              `}
+            >
+              {link.label}
+            </Link>
+          ))}
         </nav>
 
         {/* Mobile menu button */}
@@ -63,29 +64,29 @@ export function SiteHeader() {
         </button>
       </div>
 
-      {/* Mobile menu */}
+      {/* Mobile menu -- BLACKOUT enforced */}
       {menuOpen && (
         <nav
-          className="md:hidden border-t border-border"
-          style={{ backgroundColor: "#000000", color: "#EAEAEA" }}
+          className="md:hidden border-t border-white/10"
+          style={{ backgroundColor: "#000000" }}
           aria-label="Mobile navigation"
         >
-          {NAV_LINKS.map((link) => (
-            <button
-              key={link.href}
-              onClick={() => {
-                setMenuOpen(false)
-                router.push(link.href)
-              }}
-              className={`
-                block w-full text-left text-xs tracking-wider uppercase px-6 py-3 border-b border-white/10 transition-colors
-                ${pathname === link.href ? "text-gold" : "text-[#EAEAEA] hover:text-foreground"}
-              `}
-              style={{ backgroundColor: pathname === link.href ? "rgba(255,255,255,0.05)" : "#000000" }}
-            >
-              {link.label}
-            </button>
-          ))}
+          {NAV_LINKS.map((link) => {
+            const active = pathname === link.href || (link.href !== "/" && pathname?.startsWith(link.href))
+            return (
+              <button
+                key={link.href}
+                onClick={() => { setMenuOpen(false); router.push(link.href) }}
+                className="block w-full text-left text-xs tracking-wider uppercase px-6 py-3 border-b border-white/10 transition-colors focus:outline-none"
+                style={{
+                  backgroundColor: active ? "rgba(255,255,255,0.05)" : "#000000",
+                  color: active ? "#C9A66B" : "#EAEAEA",
+                }}
+              >
+                {link.label}
+              </button>
+            )
+          })}
         </nav>
       )}
     </header>
