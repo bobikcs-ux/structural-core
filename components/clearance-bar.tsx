@@ -8,11 +8,23 @@ function getTimestamp() {
   return now.toISOString().replace("T", " // ").slice(0, 24) + "Z"
 }
 
+function statusFromLatency(health: { connected: boolean; latency: number; lastUpdate: number } | undefined) {
+  if (!health || !health.connected) return { label: "OFFLINE", color: "bg-danger text-danger" }
+  const age = Date.now() - health.lastUpdate
+  if (age < 10000) return { label: "LIVE", color: "bg-success text-success" }
+  if (age < 15000) return { label: "DELAYED", color: "bg-gold text-gold" }
+  return { label: "OFFLINE", color: "bg-danger text-danger" }
+}
+
 export function ClearanceBar() {
-  const [time, setTime] = useState(getTimestamp())
+  const [time, setTime] = useState("")
+  const [mounted, setMounted] = useState(false)
   const { data: health } = useConnectionHealth()
+  const status = statusFromLatency(health)
 
   useEffect(() => {
+    setMounted(true)
+    setTime(getTimestamp())
     const interval = setInterval(() => setTime(getTimestamp()), 1000)
     return () => clearInterval(interval)
   }, [])
@@ -31,8 +43,11 @@ export function ClearanceBar() {
           CLEARANCE: SOVEREIGN
         </span>
         <span className="text-border-strong">|</span>
-        <span className={`text-[9px] tracking-wider ${health?.connected ? "text-[#4a7a3a]" : "text-[#8b2020]"}`}>
-          {health?.connected ? "DB:LINKED" : "DB:SEVERED"}
+        <span className="flex items-center gap-1.5">
+          <span className={`inline-block w-1.5 h-1.5 ${status.color.split(" ")[0]} ${status.label === "LIVE" ? "animate-pulse" : ""}`} />
+          <span className={`text-[9px] tracking-wider uppercase ${status.color.split(" ")[1]}`}>
+            {status.label}
+          </span>
         </span>
       </div>
 
@@ -42,7 +57,7 @@ export function ClearanceBar() {
         </span>
         <span className="text-border-strong">|</span>
         <span className="text-[9px] text-gold tabular-nums">
-          {time}
+          {mounted ? time : ""}
         </span>
       </div>
     </header>

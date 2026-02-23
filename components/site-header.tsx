@@ -18,7 +18,7 @@ export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false)
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/90 backdrop-blur-sm">
+    <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 backdrop-blur-sm" style={{ backgroundColor: "rgba(0,0,0,0.95)" }}>
       <div className="mx-auto max-w-7xl flex items-center justify-between px-6 h-14">
         <Link href="/" className="flex items-center gap-3">
           <span className="text-sm font-semibold tracking-[0.08em] uppercase text-foreground">
@@ -65,7 +65,11 @@ export function SiteHeader() {
 
       {/* Mobile menu */}
       {menuOpen && (
-        <nav className="md:hidden border-t border-border bg-background" aria-label="Mobile navigation">
+        <nav
+          className="md:hidden border-t border-border"
+          style={{ backgroundColor: "#000000", color: "#EAEAEA" }}
+          aria-label="Mobile navigation"
+        >
           {NAV_LINKS.map((link) => (
             <button
               key={link.href}
@@ -74,9 +78,10 @@ export function SiteHeader() {
                 router.push(link.href)
               }}
               className={`
-                block w-full text-left text-xs tracking-wider uppercase px-6 py-3 border-b border-border transition-colors
-                ${pathname === link.href ? "text-gold bg-surface" : "text-muted hover:text-foreground hover:bg-surface"}
+                block w-full text-left text-xs tracking-wider uppercase px-6 py-3 border-b border-white/10 transition-colors
+                ${pathname === link.href ? "text-gold" : "text-[#EAEAEA] hover:text-foreground"}
               `}
+              style={{ backgroundColor: pathname === link.href ? "rgba(255,255,255,0.05)" : "#000000" }}
             >
               {link.label}
             </button>

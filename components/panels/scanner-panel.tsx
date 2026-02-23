@@ -1,11 +1,11 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { useStructuralEvents, useLatestSnapshot, useConnectionHealth } from "@/lib/hooks"
+import { useRealtimeEvents, useLatestSnapshot, useConnectionHealth } from "@/lib/hooks"
 
 function severityColor(severity: string) {
   switch (severity) {
-    case "HIGH": return "text-[#8b2020]"
+    case "HIGH": return "text-danger"
     case "MEDIUM": return "text-gold"
     default: return "text-foreground"
   }
@@ -21,7 +21,7 @@ function MetricCell({ label, value }: { label: string; value: string }) {
 }
 
 export function ScannerPanel() {
-  const { data: events, error } = useStructuralEvents(100)
+  const { events, isLoading: eventsLoading } = useRealtimeEvents(100)
   const { data: snapshot } = useLatestSnapshot()
   const { data: health } = useConnectionHealth()
   const logRef = useRef<HTMLDivElement>(null)
@@ -49,8 +49,8 @@ export function ScannerPanel() {
 
       {/* Secondary metrics */}
       <div className="grid grid-cols-4 border-b border-border shrink-0">
-        <MetricCell label="BLOCK" value={snapshot ? Number(snapshot.block_height).toLocaleString() : "---"} />
-        <MetricCell label="THROUGHPUT" value={snapshot ? `${Number(snapshot.throughput_tps).toLocaleString()} TPS` : "---"} />
+        <MetricCell label="STRUCT INDEX" value={snapshot ? ((Number(snapshot.consensus_ratio) * 100 + Number(snapshot.reserve_index) * 50) / 1.5).toFixed(2) : "---"} />
+        <MetricCell label="THROUGHPUT" value={snapshot ? `${Number(snapshot.throughput_tps).toLocaleString()} OPS/S` : "---"} />
         <MetricCell label="RESERVE" value={snapshot ? Number(snapshot.reserve_index).toFixed(4) : "---"} />
         <MetricCell label="DB LINK" value={health?.connected ? "ACTIVE" : "SEVERED"} />
       </div>
@@ -58,24 +58,24 @@ export function ScannerPanel() {
       {/* Scanner header */}
       <div className="flex items-center justify-between px-2 py-1 border-b border-border bg-surface shrink-0">
         <span className="text-[9px] text-muted tracking-wider uppercase">
-          SYSTEM SCANNER // REAL-TIME LOG // SUPABASE
+          {'SYSTEM SCANNER // '}{eventsLoading ? "LOADING" : "REALTIME"}{' // '}{events.length}{' EVENTS'}
         </span>
         <div className="flex items-center gap-2">
-          <span className={`inline-block w-1.5 h-1.5 ${error ? "bg-[#8b2020]" : "bg-[#4a7a3a]"} animate-pulse`} />
-          <span className={`text-[9px] tracking-wider ${error ? "text-[#8b2020]" : "text-[#4a7a3a]"}`}>
-            {error ? "ERROR" : "ACTIVE"}
+          <span className={`inline-block w-1.5 h-1.5 ${health?.connected ? "bg-success" : "bg-danger"} ${health?.connected ? "animate-pulse" : ""}`} />
+          <span className={`text-[9px] tracking-wider ${health?.connected ? "text-success" : "text-danger"}`}>
+            {health?.connected ? "ACTIVE" : "SEVERED"}
           </span>
         </div>
       </div>
 
       {/* Log output */}
-      {error ? (
+      {!health?.connected && !eventsLoading ? (
         <div className="flex-1 flex items-center justify-center">
-          <span className="text-[10px] text-[#8b2020] tracking-wider uppercase">CRITICAL: LINK SEVERED</span>
+          <span className="text-[10px] text-danger tracking-wider uppercase">SYSTEM STATUS: DATA UNAVAILABLE</span>
         </div>
       ) : (
         <div ref={logRef} className="flex-1 overflow-y-auto bg-background">
-          {(events ?? []).map((evt: Record<string, string>) => (
+          {events.map((evt) => (
             <div
               key={evt.id}
               className="flex items-start px-2 py-px text-[10px] border-b border-border hover:bg-surface"

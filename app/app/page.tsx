@@ -25,7 +25,7 @@ export default function ConsolePage() {
   const [active, setActive] = useState<NavKey>("dashboard")
 
   return (
-    <main className="flex flex-col h-dvh overflow-hidden bg-background">
+    <main className="flex flex-col h-full overflow-hidden bg-background">
       <ClearanceBar />
       <div className="flex-1 overflow-hidden">
         <ActivePanel active={active} />

@@ -1,9 +1,50 @@
 "use client"
 
+import { useEffect, useRef, useState } from "react"
 import useSWR from "swr"
 import { createClient } from "@/lib/supabase/client"
 
 const supabase = createClient()
+
+// ── Realtime: append-only subscription for structural_events ──
+export function useRealtimeEvents(initialLimit = 30) {
+  const [events, setEvents] = useState<Record<string, string>[]>([])
+  const initialLoaded = useRef(false)
+
+  useEffect(() => {
+    // Load initial batch
+    async function loadInitial() {
+      const { data } = await supabase
+        .from("structural_events")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(initialLimit)
+      if (data) {
+        setEvents(data.reverse())
+        initialLoaded.current = true
+      }
+    }
+    loadInitial()
+
+    // Subscribe to new inserts
+    const channel = supabase
+      .channel("structural-events-realtime")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "structural_events" },
+        (payload) => {
+          setEvents((prev) => [...prev.slice(-200), payload.new as Record<string, string>])
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [initialLimit])
+
+  return { events, isLoading: !initialLoaded.current }
+}
 
 // ── Dashboard: latest snapshot ──
 export function useLatestSnapshot() {
@@ -16,7 +57,7 @@ export function useLatestSnapshot() {
       .single()
     if (error) throw error
     return data
-  }, { refreshInterval: 8000 })
+  }, { refreshInterval: 5000 })
 }
 
 // ── Dashboard: recent events for activity log ──
@@ -111,6 +152,6 @@ export function useConnectionHealth() {
       .select("id")
       .limit(1)
     const latency = Math.round(performance.now() - start)
-    return { connected: !error, latency }
-  }, { refreshInterval: 10000 })
+    return { connected: !error, latency, lastUpdate: Date.now() }
+  }, { refreshInterval: 5000 })
 }

@@ -1,10 +1,10 @@
 "use client"
 
-import { useLatestSnapshot, useRecentEvents, useConnectionHealth } from "@/lib/hooks"
+import { useLatestSnapshot, useRealtimeEvents, useConnectionHealth } from "@/lib/hooks"
 
 function severityColor(severity: string) {
   switch (severity) {
-    case "HIGH": return "text-[#8b2020]"
+    case "HIGH": return "text-danger"
     case "MEDIUM": return "text-gold"
     default: return "text-foreground"
   }
@@ -41,17 +41,17 @@ function MiniChart({ data }: { data: number[] }) {
 
 export function DashboardPanel() {
   const { data: snapshot, error: snapError } = useLatestSnapshot()
-  const { data: events, error: eventsError } = useRecentEvents(12)
+  const { events, isLoading: eventsLoading } = useRealtimeEvents(20)
   const { data: health } = useConnectionHealth()
 
   const isLoading = !snapshot && !snapError
 
   const metrics = snapshot ? [
-    { label: "BLOCK HEIGHT", value: Number(snapshot.block_height).toLocaleString(), delta: `NODE: ${snapshot.active_nodes}` },
-    { label: "TX THROUGHPUT", value: `${Number(snapshot.throughput_tps).toLocaleString()}/s`, delta: "TPS" },
-    { label: "CONSENSUS", value: `${(Number(snapshot.consensus_ratio) * 100).toFixed(2)}%`, delta: "RATIO" },
+    { label: "STRUCTURAL INDEX", value: ((Number(snapshot.consensus_ratio) * 100 + Number(snapshot.reserve_index) * 50) / 1.5).toFixed(2), delta: "COMPOSITE" },
+    { label: "THROUGHPUT", value: `${Number(snapshot.throughput_tps).toLocaleString()}/s`, delta: "OPS/SEC" },
+    { label: "CONSENSUS", value: `${(Number(snapshot.consensus_ratio) * 100).toFixed(2)}%`, delta: "VALIDATION RATIO" },
     { label: "RESERVE INDEX", value: Number(snapshot.reserve_index).toFixed(4), delta: "CALIBRATED" },
-    { label: "INTEGRITY", value: snapshot.integrity_hash, delta: "HASH" },
+    { label: "INTEGRITY HASH", value: snapshot.integrity_hash, delta: "VERIFIED" },
     { label: "ACTIVE NODES", value: String(snapshot.active_nodes), delta: "ONLINE" },
   ] : []
 
@@ -60,7 +60,7 @@ export function DashboardPanel() {
       {/* Connection status */}
       <div className="flex items-center justify-between px-2 py-0.5 border-b border-border bg-surface shrink-0">
         <span className="text-[8px] text-muted tracking-wider uppercase">
-          SUPABASE LINK // {health?.connected ? "CONNECTED" : "SEVERED"}
+          {'DATA LINK // '}{health?.connected ? "CONNECTED" : "SEVERED"}
         </span>
         <span className="text-[8px] text-gold tabular-nums">
           {health ? `${health.latency}ms` : "---"}
@@ -73,7 +73,7 @@ export function DashboardPanel() {
         </div>
       ) : snapError ? (
         <div className="flex-1 flex items-center justify-center">
-          <span className="text-[10px] text-[#8b2020] tracking-wider uppercase">CRITICAL: LINK SEVERED</span>
+          <span className="text-[10px] text-danger tracking-wider uppercase">SYSTEM STATUS: DATA UNAVAILABLE</span>
         </div>
       ) : (
         <>
@@ -92,20 +92,22 @@ export function DashboardPanel() {
           <div className="border-b border-border p-2 shrink-0">
             <div className="flex items-center justify-between mb-1">
               <span className="text-[9px] text-muted tracking-wider uppercase">SYSTEM LOAD // EPOCH WINDOW</span>
-              <span className="text-[9px] text-gold tabular-nums">LIVE</span>
+              <span className="text-[9px] text-gold tabular-nums">
+                {snapshot ? new Date(snapshot.created_at).toISOString().replace("T", " ").slice(0, 19) : "---"}
+              </span>
             </div>
             <MiniChart data={snapshot?.system_load ?? []} />
           </div>
 
-          {/* Recent activity log from Supabase */}
+          {/* Realtime activity log */}
           <div className="flex-1 overflow-hidden flex flex-col">
             <div className="px-2 py-1 border-b border-border bg-surface shrink-0">
               <span className="text-[9px] text-muted tracking-wider uppercase">
-                ACTIVITY LOG // {events?.length ?? 0} EVENTS {eventsError ? "// ERROR" : ""}
+                {'ACTIVITY LOG // '}{events.length}{' EVENTS'}{eventsLoading ? " // LOADING" : " // REALTIME"}
               </span>
             </div>
             <div className="flex-1 overflow-y-auto">
-              {(events ?? []).map((evt: Record<string, string>) => (
+              {events.map((evt) => (
                 <div
                   key={evt.id}
                   className="flex items-start gap-2 px-2 py-0.5 border-b border-border text-[10px]"

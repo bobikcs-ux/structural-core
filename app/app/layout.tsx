@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { SiteHeader } from "@/components/site-header"
 
 export const metadata: Metadata = {
   title: "BOBIKCS // STRUCTURAL CORE -- Console",
@@ -11,8 +12,11 @@ export default function ConsoleLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="console-shell console-table">
-      {children}
-    </div>
+    <>
+      <SiteHeader />
+      <div className="console-shell console-table" style={{ height: "calc(100dvh - 56px)", marginTop: "56px" }}>
+        {children}
+      </div>
+    </>
   )
 }
