@@ -149,6 +149,21 @@ export function useSimulationRuns() {
   })
 }
 
+// ── Heartbeat: periodically insert events to keep the log alive ──
+export function useHeartbeat(intervalMs = 6000) {
+  const started = useRef(false)
+  useEffect(() => {
+    if (started.current) return
+    started.current = true
+    const id = setInterval(() => {
+      fetch("/api/heartbeat", { method: "POST" }).catch(() => {})
+    }, intervalMs)
+    // Fire one immediately
+    fetch("/api/heartbeat", { method: "POST" }).catch(() => {})
+    return () => clearInterval(id)
+  }, [intervalMs])
+}
+
 // ── Connection health ──
 export function useConnectionHealth() {
   return useSWR("connection-health", async () => {

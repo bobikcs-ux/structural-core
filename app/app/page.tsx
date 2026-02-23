@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useHeartbeat } from "@/lib/hooks"
 import { ClearanceBar } from "@/components/clearance-bar"
 import { BottomNav, type NavKey } from "@/components/bottom-nav"
 import { DashboardPanel } from "@/components/panels/dashboard-panel"
@@ -22,6 +23,7 @@ function ActivePanel({ active }: { active: NavKey }) {
 }
 
 export default function ConsolePage() {
+  useHeartbeat(6000)
   const [active, setActive] = useState<NavKey>("dashboard")
 
   return (
