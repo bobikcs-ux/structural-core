@@ -1,6 +1,11 @@
 import type { Metadata, Viewport } from "next"
-import { IBM_Plex_Mono } from "next/font/google"
+import { Inter, IBM_Plex_Mono } from "next/font/google"
 import "./globals.css"
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-sans",
+})
 
 const ibmPlexMono = IBM_Plex_Mono({
   subsets: ["latin"],
@@ -9,16 +14,14 @@ const ibmPlexMono = IBM_Plex_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "BOBIKCS // STRUCTURAL CORE",
-  description: "Sovereign Intelligence Platform -- Deterministic Command & Control",
+  title: "BOBIKCS -- Institutional Structural Risk Infrastructure",
+  description: "Deterministic structural intelligence for institutional oversight and risk governance.",
 }
 
 export const viewport: Viewport = {
-  themeColor: "#050505",
+  themeColor: "#000000",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
 }
 
 export default function RootLayout({
@@ -27,8 +30,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={ibmPlexMono.variable}>
-      <body className="font-mono">
+    <html lang="en" className={`${inter.variable} ${ibmPlexMono.variable}`}>
+      <body className="font-sans bg-background text-foreground">
         {children}
       </body>
     </html>
