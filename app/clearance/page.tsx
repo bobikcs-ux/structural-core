@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
-import { createClient } from "@/lib/supabase/client"
 
 const RISK_DOMAINS = [
   "Sovereign Risk", "Structural Integrity", "Governance Audit",
@@ -37,17 +36,21 @@ export default function ClearancePage() {
     const hash = "0x" + hashArray.slice(0, 12).map(b => b.toString(16).padStart(2, "0")).join("")
 
     try {
-      const supabase = createClient()
-      const { error: dbError } = await supabase.from("clearance_requests").insert({
-        institution,
-        jurisdiction,
-        aum,
-        risk_domain,
-        intended_use,
-        email,
-        request_hash: hash,
+      const res = await fetch("/api/clearance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          institution,
+          jurisdiction,
+          aum,
+          risk_domain,
+          intended_use,
+          email,
+          request_hash: hash,
+        }),
       })
-      if (dbError) throw dbError
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Submission failed")
       setRequestHash(hash)
       setSubmitted(true)
     } catch (err) {
