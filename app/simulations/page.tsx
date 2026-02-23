@@ -4,6 +4,7 @@ import { useState, useCallback } from "react"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { runStructuralSnapshot } from "@/lib/hooks"
+import { generateSimulationPDF } from "@/lib/pdf-engine"
 
 const REGIONS = [
   "North America", "Europe", "Asia Pacific", "Middle East",
@@ -126,9 +127,10 @@ export default function SimulationsPage() {
                 <select
                   value={region}
                   onChange={(e) => setRegion(e.target.value)}
-                  className="w-full bg-surface border border-border text-foreground text-sm px-3 py-2 outline-none focus:border-gold"
+                  className="w-full border border-border text-sm px-3 py-2 outline-none focus:border-gold"
+                  style={{ backgroundColor: "#000", color: "#EAEAEA" }}
                 >
-                  {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
+                  {REGIONS.map((r) => <option key={r} value={r} style={{ backgroundColor: "#000", color: "#EAEAEA" }}>{r}</option>)}
                 </select>
               </div>
               <div>
@@ -136,9 +138,10 @@ export default function SimulationsPage() {
                 <select
                   value={shockType}
                   onChange={(e) => setShockType(e.target.value)}
-                  className="w-full bg-surface border border-border text-foreground text-sm px-3 py-2 outline-none focus:border-gold"
+                  className="w-full border border-border text-sm px-3 py-2 outline-none focus:border-gold"
+                  style={{ backgroundColor: "#000", color: "#EAEAEA" }}
                 >
-                  {SHOCK_TYPES.map((s) => <option key={s} value={s}>{s}</option>)}
+                  {SHOCK_TYPES.map((s) => <option key={s} value={s} style={{ backgroundColor: "#000", color: "#EAEAEA" }}>{s}</option>)}
                 </select>
               </div>
             </div>
@@ -252,7 +255,22 @@ export default function SimulationsPage() {
               </div>
 
               <div className="p-4 border-t border-border">
-                <button className="text-xs tracking-wider uppercase px-4 py-2 border border-border text-muted hover:text-foreground hover:bg-surface transition-colors">
+                <button
+                  onClick={() =>
+                    generateSimulationPDF({
+                      shockMagnitude: magnitude,
+                      epochs: duration,
+                      shockType,
+                      region,
+                      verdict: result.verdict,
+                      survivalRate: result.survival_rate,
+                      maxDrawdown: result.max_drawdown,
+                      recoveryEpochs: result.recovery_epochs,
+                      curve: result.curve,
+                    })
+                  }
+                  className="text-xs tracking-wider uppercase px-4 py-2 border border-border text-muted hover:text-foreground hover:bg-surface transition-colors"
+                >
                   Download Institutional Report (PDF)
                 </button>
               </div>

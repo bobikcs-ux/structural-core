@@ -1,5 +1,8 @@
+"use client"
+
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
+import { generateReportPDF } from "@/lib/pdf-engine"
 
 const REPORTS = [
   {
@@ -105,13 +108,12 @@ export default function ReportsPage() {
                   <div className="px-4 py-3 text-xs text-muted font-mono tabular-nums self-center">{report.timestamp}</div>
                   <div className="px-4 py-3 text-xs text-gold font-mono self-center">{report.hash}</div>
                   <div className="px-4 py-3 self-center text-right">
-                    <a
-                      href={`/api/report?title=${encodeURIComponent(report.title)}&version=${encodeURIComponent(report.version)}&hash=${encodeURIComponent(report.hash)}&timestamp=${encodeURIComponent(report.timestamp)}&category=${encodeURIComponent(report.category)}`}
-                      download
-                      className="text-[10px] tracking-wider uppercase px-3 py-1 border border-border text-muted hover:text-foreground hover:bg-surface transition-colors inline-block"
+                    <button
+                      onClick={() => generateReportPDF(report)}
+                      className="text-[10px] tracking-wider uppercase px-3 py-1 border border-border text-muted hover:text-foreground hover:bg-surface transition-colors"
                     >
-                      Download
-                    </a>
+                      PDF
+                    </button>
                   </div>
                 </div>
               ))}
@@ -129,13 +131,12 @@ export default function ReportsPage() {
                       {report.category} -- {report.version}
                     </div>
                   </div>
-                  <a
-                    href={`/api/report?title=${encodeURIComponent(report.title)}&version=${encodeURIComponent(report.version)}&hash=${encodeURIComponent(report.hash)}&timestamp=${encodeURIComponent(report.timestamp)}&category=${encodeURIComponent(report.category)}`}
-                    download
-                    className="text-[10px] tracking-wider uppercase px-3 py-1 border border-border text-muted hover:text-foreground shrink-0 inline-block"
+                  <button
+                    onClick={() => generateReportPDF(report)}
+                    className="text-[10px] tracking-wider uppercase px-3 py-1 border border-border text-muted hover:text-foreground shrink-0"
                   >
-                    Download
-                  </a>
+                    PDF
+                  </button>
                 </div>
                 <div className="flex items-center gap-4 text-[10px] text-muted">
                   <span className="font-mono tabular-nums">{report.timestamp}</span>

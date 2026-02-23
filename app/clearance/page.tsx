@@ -151,11 +151,12 @@ export default function ClearancePage() {
                   <select
                     name="risk_domain"
                     required
-                    className="w-full bg-surface border border-border text-foreground text-sm px-3 py-2.5 outline-none focus:border-gold"
+                    className="w-full border border-border text-sm px-3 py-2.5 outline-none focus:border-gold"
+                    style={{ backgroundColor: "#000", color: "#EAEAEA" }}
                   >
-                    <option value="">Select primary risk domain</option>
+                    <option value="" style={{ backgroundColor: "#000", color: "#EAEAEA" }}>Select primary risk domain</option>
                     {RISK_DOMAINS.map((d) => (
-                      <option key={d} value={d}>{d}</option>
+                      <option key={d} value={d} style={{ backgroundColor: "#000", color: "#EAEAEA" }}>{d}</option>
                     ))}
                   </select>
                 </div>
