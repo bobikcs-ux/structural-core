@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #050505;
+  --color-foreground: #FFFFFF;
+  --color-gold: #C9A66B;
+  --color-gold-dim: #8a7248;
+  --color-border: #1a1a1a;
+  --color-border-strong: #2a2a2a;
+  --color-surface: #0a0a0a;
+  --color-surface-raised: #111111;
+  --color-muted: #666666;
+  --color-danger: #8b2020;
+  --color-success: #2d5a1e;
+
+  --font-mono: "IBM Plex Mono", monospace;
+
+  --radius-none: 0px;
+}
+
+* {
+  border-radius: 0px !important;
+  box-shadow: none !important;
+}
+
+body {
+  font-family: var(--font-mono);
+  background: var(--color-background);
+  color: var(--color-foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: 11px;
+  line-height: 1.4;
+  overflow: hidden;
+  height: 100dvh;
+}
+
+::selection {
+  background: var(--color-gold);
+  color: var(--color-background);
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+}
+
+input, textarea, select {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--color-surface);
+  color: var(--color-foreground);
+  border: 1px solid var(--color-border);
+  padding: 4px 6px;
+  outline: none;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--color-gold);
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th, td {
+  border: 1px solid var(--color-border);
+  padding: 2px 6px;
+  text-align: left;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+th {
+  background: var(--color-surface);
+  color: var(--color-gold);
+  text-transform: uppercase;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
