@@ -1,65 +1,37 @@
 "use client"
 
-import { useState, useCallback, useMemo } from "react"
-
-interface SimResult {
-  epoch: number
-  stress: number
-  yield: number
-  drawdown: number
-  recovery: number
-  verdict: "PASS" | "FAIL" | "MARGINAL"
-}
+import { useState, useCallback } from "react"
+import { runStructuralSnapshot, useSimulationRuns } from "@/lib/hooks"
 
 interface SimParams {
   shockMagnitude: number
-  duration: number
+  epochs: number
   correlationFactor: number
   liquidityFloor: number
   reserveRatio: number
 }
 
-function runSimulation(params: SimParams): SimResult[] {
-  const results: SimResult[] = []
-  let baseline = 100
-
-  for (let i = 0; i < params.duration; i++) {
-    const shock = params.shockMagnitude * Math.sin((i * 0.5) + 1) * (1 + params.correlationFactor * 0.1)
-    const stress = Math.max(0, Math.min(100, 50 + shock * 3 + ((i * 17) % 30) - 15))
-    const yieldVal = baseline * (1 - stress / 200) * (params.reserveRatio / 100)
-    const drawdown = Math.max(0, stress - params.liquidityFloor)
-    baseline = baseline * (1 - drawdown * 0.001)
-    const recovery = Math.max(0, 100 - drawdown * 1.5)
-
-    let verdict: SimResult["verdict"] = "PASS"
-    if (stress > 75) verdict = "FAIL"
-    else if (stress > 55) verdict = "MARGINAL"
-
-    results.push({
-      epoch: i + 1,
-      stress: Math.round(stress * 100) / 100,
-      yield: Math.round(yieldVal * 100) / 100,
-      drawdown: Math.round(drawdown * 100) / 100,
-      recovery: Math.round(recovery * 100) / 100,
-      verdict,
-    })
-  }
-  return results
+interface SimResult {
+  id: string
+  verdict: string
+  survival_rate: number
+  max_drawdown: number
+  recovery_epochs: number
+  curve: number[]
 }
 
-function WireframeChart({ data, dataKey }: { data: SimResult[]; dataKey: keyof SimResult }) {
-  if (data.length === 0) return null
+function WireframeChart({ data, label }: { data: number[]; label: string }) {
+  if (!data || data.length === 0) return null
 
-  const values = data.map((d) => Number(d[dataKey]))
-  const max = Math.max(...values)
-  const min = Math.min(...values)
+  const max = Math.max(...data)
+  const min = Math.min(...data)
   const range = max - min || 1
   const h = 64
   const w = 300
 
-  const points = values
+  const points = data
     .map((v, i) => {
-      const x = (i / (values.length - 1)) * w
+      const x = (i / (data.length - 1)) * w
       const y = h - ((v - min) / range) * (h - 8) - 4
       return `${x},${y}`
     })
@@ -68,28 +40,17 @@ function WireframeChart({ data, dataKey }: { data: SimResult[]; dataKey: keyof S
   return (
     <div className="border border-border p-1.5">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-[8px] text-muted tracking-wider uppercase">{String(dataKey).toUpperCase()}</span>
-        <span className="text-[8px] text-gold tabular-nums">{values[values.length - 1]?.toFixed(2)}</span>
+        <span className="text-[8px] text-muted tracking-wider uppercase">{label}</span>
+        <span className="text-[8px] text-gold tabular-nums">{data[data.length - 1]?.toFixed(2)}</span>
       </div>
-      <svg viewBox={`0 0 ${w} ${h}`} className="w-full" style={{ height: `${h}px` }}>
-        {/* Grid lines */}
+      <svg viewBox={`0 0 ${w} ${h}`} className="w-full" style={{ height: `${h}px` }} role="img" aria-label={`${label} chart`}>
         {[0, 0.25, 0.5, 0.75, 1].map((f) => (
-          <line
-            key={f}
-            x1={0} y1={h - f * (h - 8) - 4}
-            x2={w} y2={h - f * (h - 8) - 4}
-            stroke="#1a1a1a" strokeWidth="0.5"
-          />
+          <line key={f} x1={0} y1={h - f * (h - 8) - 4} x2={w} y2={h - f * (h - 8) - 4} stroke="#1a1a1a" strokeWidth="0.5" />
         ))}
-        <polyline
-          points={points}
-          fill="none"
-          stroke="#C9A66B"
-          strokeWidth="1"
-        />
-        {values.map((v, i) => {
+        <polyline points={points} fill="none" stroke="#C9A66B" strokeWidth="1" />
+        {data.map((v, i) => {
           if (i % 3 !== 0) return null
-          const x = (i / (values.length - 1)) * w
+          const x = (i / (data.length - 1)) * w
           const y = h - ((v - min) / range) * (h - 8) - 4
           return <circle key={i} cx={x} cy={y} r="1.5" fill="#C9A66B" />
         })}
@@ -98,47 +59,49 @@ function WireframeChart({ data, dataKey }: { data: SimResult[]; dataKey: keyof S
   )
 }
 
-function verdictColor(v: SimResult["verdict"]) {
+function verdictColor(v: string) {
   switch (v) {
-    case "PASS": return "text-[#4a7a3a]"
-    case "FAIL": return "text-[#8b2020]"
-    case "MARGINAL": return "text-gold"
+    case "STABLE": return "text-[#4a7a3a]"
+    case "CRITICAL": return "text-[#8b2020]"
+    case "STRESSED": return "text-gold"
+    default: return "text-foreground"
   }
 }
 
 export function SimulationPanel() {
   const [params, setParams] = useState<SimParams>({
-    shockMagnitude: 12,
-    duration: 24,
-    correlationFactor: 5,
-    liquidityFloor: 30,
-    reserveRatio: 80,
+    shockMagnitude: 7,
+    epochs: 30,
+    correlationFactor: 4,
+    liquidityFloor: 0.5,
+    reserveRatio: 0.8,
   })
-  const [results, setResults] = useState<SimResult[]>([])
-  const [hasRun, setHasRun] = useState(false)
+  const [result, setResult] = useState<SimResult | null>(null)
+  const [running, setRunning] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const { data: pastRuns, mutate } = useSimulationRuns()
 
-  const handleRun = useCallback(() => {
-    setResults(runSimulation(params))
-    setHasRun(true)
-  }, [params])
+  const handleRun = useCallback(async () => {
+    setRunning(true)
+    setError(null)
+    try {
+      const res = await runStructuralSnapshot(params)
+      setResult(res)
+      mutate()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "RPC FAILURE")
+    } finally {
+      setRunning(false)
+    }
+  }, [params, mutate])
 
-  const paramFields: { key: keyof SimParams; label: string; min: number; max: number }[] = [
-    { key: "shockMagnitude", label: "SHOCK MAG", min: 1, max: 50 },
-    { key: "duration", label: "EPOCHS", min: 4, max: 100 },
-    { key: "correlationFactor", label: "CORR FACTOR", min: 0, max: 20 },
-    { key: "liquidityFloor", label: "LIQ FLOOR", min: 0, max: 100 },
-    { key: "reserveRatio", label: "RESERVE %", min: 10, max: 100 },
+  const paramFields: { key: keyof SimParams; label: string; min: number; max: number; step: number }[] = [
+    { key: "shockMagnitude", label: "SHOCK MAG", min: 1, max: 50, step: 1 },
+    { key: "epochs", label: "EPOCHS", min: 4, max: 100, step: 1 },
+    { key: "correlationFactor", label: "CORR FACTOR", min: 0, max: 20, step: 0.1 },
+    { key: "liquidityFloor", label: "LIQ FLOOR", min: 0, max: 1, step: 0.01 },
+    { key: "reserveRatio", label: "RESERVE %", min: 0.01, max: 2, step: 0.01 },
   ]
-
-  const summary = useMemo(() => {
-    if (results.length === 0) return null
-    const passes = results.filter((r) => r.verdict === "PASS").length
-    const fails = results.filter((r) => r.verdict === "FAIL").length
-    const marginals = results.filter((r) => r.verdict === "MARGINAL").length
-    const avgStress = results.reduce((a, r) => a + r.stress, 0) / results.length
-    const maxDrawdown = Math.max(...results.map((r) => r.drawdown))
-    return { passes, fails, marginals, avgStress, maxDrawdown }
-  }, [results])
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -146,7 +109,7 @@ export function SimulationPanel() {
       <div className="border-b border-border bg-surface shrink-0">
         <div className="px-2 py-1 border-b border-border">
           <span className="text-[9px] text-muted tracking-wider uppercase">
-            PARAMETRIC STRESS TEST // SIMULATION LABORATORY
+            PARAMETRIC STRESS TEST // SIMULATION LABORATORY // SUPABASE RPC
           </span>
         </div>
         <div className="flex items-end gap-1 p-2 flex-wrap">
@@ -157,6 +120,7 @@ export function SimulationPanel() {
                 type="number"
                 min={f.min}
                 max={f.max}
+                step={f.step}
                 value={params[f.key]}
                 onChange={(e) => setParams((p) => ({ ...p, [f.key]: Number(e.target.value) }))}
                 className="w-[72px] text-[10px] tabular-nums"
@@ -165,77 +129,113 @@ export function SimulationPanel() {
           ))}
           <button
             onClick={handleRun}
-            className="border border-gold text-gold text-[10px] tracking-wider uppercase px-4 py-1 hover:bg-gold hover:text-background transition-colors duration-75 font-medium"
+            disabled={running}
+            className={`border border-gold text-gold text-[10px] tracking-wider uppercase px-4 py-1 font-medium ${
+              running ? "opacity-50" : "hover:bg-gold hover:text-background"
+            }`}
           >
-            EXECUTE
+            {running ? "RUNNING..." : "EXECUTE"}
           </button>
         </div>
       </div>
 
-      {!hasRun ? (
+      {error ? (
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="text-[10px] text-muted tracking-wider uppercase">AWAITING PARAMETERS</div>
-            <div className="text-[9px] text-border-strong mt-1">CONFIGURE AND EXECUTE TO BEGIN STRESS TEST</div>
-          </div>
+          <span className="text-[10px] text-[#8b2020] tracking-wider uppercase">ERROR: {error}</span>
         </div>
-      ) : (
-        <div className="flex-1 overflow-y-auto">
-          {/* Summary */}
-          {summary && (
-            <div className="grid grid-cols-5 border-b border-border">
-              <div className="border-r border-border p-1.5">
-                <div className="text-[8px] text-muted tracking-wider uppercase">PASS</div>
-                <div className="text-[12px] text-[#4a7a3a] font-semibold tabular-nums">{summary.passes}</div>
+      ) : !result ? (
+        <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <div className="text-[10px] text-muted tracking-wider uppercase">AWAITING PARAMETERS</div>
+              <div className="text-[9px] text-border-strong mt-1">CONFIGURE AND EXECUTE TO BEGIN STRESS TEST</div>
+            </div>
+          </div>
+          {/* Past runs table */}
+          {pastRuns && pastRuns.length > 0 && (
+            <div className="border-t border-border shrink-0">
+              <div className="px-2 py-1 border-b border-border bg-surface">
+                <span className="text-[9px] text-muted tracking-wider uppercase">PREVIOUS RUNS // {pastRuns.length}</span>
               </div>
-              <div className="border-r border-border p-1.5">
-                <div className="text-[8px] text-muted tracking-wider uppercase">MARGINAL</div>
-                <div className="text-[12px] text-gold font-semibold tabular-nums">{summary.marginals}</div>
-              </div>
-              <div className="border-r border-border p-1.5">
-                <div className="text-[8px] text-muted tracking-wider uppercase">FAIL</div>
-                <div className="text-[12px] text-[#8b2020] font-semibold tabular-nums">{summary.fails}</div>
-              </div>
-              <div className="border-r border-border p-1.5">
-                <div className="text-[8px] text-muted tracking-wider uppercase">AVG STRESS</div>
-                <div className="text-[12px] text-gold font-semibold tabular-nums">{summary.avgStress.toFixed(2)}</div>
-              </div>
-              <div className="p-1.5">
-                <div className="text-[8px] text-muted tracking-wider uppercase">MAX DRAWDOWN</div>
-                <div className="text-[12px] text-gold font-semibold tabular-nums">{summary.maxDrawdown.toFixed(2)}</div>
+              <div className="max-h-[120px] overflow-y-auto">
+                <table>
+                  <thead className="sticky top-0 z-10">
+                    <tr>
+                      <th>SHOCK</th>
+                      <th>EPOCHS</th>
+                      <th>VERDICT</th>
+                      <th>SURVIVAL</th>
+                      <th>DRAWDOWN</th>
+                      <th>RECOVERY</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pastRuns.map((run: Record<string, string | number>) => (
+                      <tr key={run.id as string} className="hover:bg-surface-raised">
+                        <td className="tabular-nums">{String(run.shock_magnitude)}</td>
+                        <td className="tabular-nums">{String(run.epochs)}</td>
+                        <td className={`font-semibold ${verdictColor(run.result_verdict as string)}`}>
+                          {run.result_verdict as string}
+                        </td>
+                        <td className="text-gold tabular-nums">{Number(run.result_survival_rate).toFixed(2)}%</td>
+                        <td className="tabular-nums">{Number(run.result_max_drawdown).toFixed(2)}%</td>
+                        <td className="tabular-nums">{String(run.result_recovery_epochs)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
-
-          {/* Wireframe charts */}
-          <div className="grid grid-cols-2 gap-0 border-b border-border">
-            <WireframeChart data={results} dataKey="stress" />
-            <WireframeChart data={results} dataKey="drawdown" />
-            <WireframeChart data={results} dataKey="yield" />
-            <WireframeChart data={results} dataKey="recovery" />
+        </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto">
+          {/* Verdict summary */}
+          <div className="grid grid-cols-4 border-b border-border">
+            <div className="border-r border-border p-1.5">
+              <div className="text-[8px] text-muted tracking-wider uppercase">VERDICT</div>
+              <div className={`text-[14px] font-semibold ${verdictColor(result.verdict)}`}>{result.verdict}</div>
+            </div>
+            <div className="border-r border-border p-1.5">
+              <div className="text-[8px] text-muted tracking-wider uppercase">SURVIVAL</div>
+              <div className="text-[14px] text-gold font-semibold tabular-nums">{result.survival_rate.toFixed(2)}%</div>
+            </div>
+            <div className="border-r border-border p-1.5">
+              <div className="text-[8px] text-muted tracking-wider uppercase">MAX DRAWDOWN</div>
+              <div className="text-[14px] text-gold font-semibold tabular-nums">{result.max_drawdown.toFixed(2)}%</div>
+            </div>
+            <div className="p-1.5">
+              <div className="text-[8px] text-muted tracking-wider uppercase">RECOVERY EPOCHS</div>
+              <div className="text-[14px] text-gold font-semibold tabular-nums">{result.recovery_epochs}</div>
+            </div>
           </div>
 
-          {/* Results table */}
+          {/* Wireframe curve chart */}
+          <div className="border-b border-border">
+            <WireframeChart data={result.curve} label="STRUCTURAL INTEGRITY CURVE" />
+          </div>
+
+          {/* Curve data table */}
           <table>
             <thead className="sticky top-0 z-10">
               <tr>
                 <th>EPOCH</th>
-                <th>STRESS</th>
-                <th>YIELD</th>
-                <th>DRAWDOWN</th>
-                <th>RECOVERY</th>
-                <th>VERDICT</th>
+                <th>INTEGRITY VALUE</th>
+                <th>DELTA</th>
               </tr>
             </thead>
             <tbody>
-              {results.map((r) => (
-                <tr key={r.epoch} className="hover:bg-surface-raised transition-colors duration-75">
-                  <td className="text-muted tabular-nums">{String(r.epoch).padStart(3, "0")}</td>
-                  <td className="text-gold tabular-nums">{r.stress.toFixed(2)}</td>
-                  <td className="tabular-nums">{r.yield.toFixed(2)}</td>
-                  <td className="tabular-nums">{r.drawdown.toFixed(2)}</td>
-                  <td className="tabular-nums">{r.recovery.toFixed(2)}</td>
-                  <td className={`font-semibold ${verdictColor(r.verdict)}`}>{r.verdict}</td>
+              {result.curve.map((v, i) => (
+                <tr key={i} className="hover:bg-surface-raised">
+                  <td className="text-muted tabular-nums">{String(i + 1).padStart(3, "0")}</td>
+                  <td className="text-gold tabular-nums">{v.toFixed(2)}</td>
+                  <td className="tabular-nums">
+                    {i > 0 ? (
+                      <span className={v - result.curve[i - 1] >= 0 ? "text-[#4a7a3a]" : "text-[#8b2020]"}>
+                        {(v - result.curve[i - 1] >= 0 ? "+" : "")}{(v - result.curve[i - 1]).toFixed(2)}
+                      </span>
+                    ) : "---"}
+                  </td>
                 </tr>
               ))}
             </tbody>

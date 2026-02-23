@@ -1,14 +1,12 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
-import { SYSTEM_METRICS, generateLogs } from "@/lib/data"
-import type { LogEntry } from "@/lib/data"
+import { useEffect, useRef } from "react"
+import { useStructuralEvents, useLatestSnapshot, useConnectionHealth } from "@/lib/hooks"
 
-function levelColor(level: LogEntry["level"]) {
-  switch (level) {
-    case "CRIT": return "text-[#8b2020]"
-    case "WARN": return "text-gold"
-    case "SYS": return "text-muted"
+function severityColor(severity: string) {
+  switch (severity) {
+    case "HIGH": return "text-[#8b2020]"
+    case "MEDIUM": return "text-gold"
     default: return "text-foreground"
   }
 }
@@ -23,79 +21,82 @@ function MetricCell({ label, value }: { label: string; value: string }) {
 }
 
 export function ScannerPanel() {
-  const [logs, setLogs] = useState<LogEntry[]>(() => generateLogs(50))
+  const { data: events, error } = useStructuralEvents(100)
+  const { data: snapshot } = useLatestSnapshot()
+  const { data: health } = useConnectionHealth()
   const logRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setLogs((prev) => {
-        const newLog = generateLogs(1).map((l) => ({
-          ...l,
-          timestamp: new Date().toISOString().replace("T", " ").slice(0, 19),
-          message: l.message + ` [seq:${Math.floor(Math.random() * 99999)}]`,
-        }))
-        return [...prev.slice(-99), ...newLog]
-      })
-    }, 2500)
-    return () => clearInterval(interval)
-  }, [])
 
   useEffect(() => {
     if (logRef.current) {
       logRef.current.scrollTop = logRef.current.scrollHeight
     }
-  }, [logs])
+  }, [events])
+
+  const memUsage = snapshot?.system_load
+    ? `${(snapshot.system_load.reduce((a: number, b: number) => a + b, 0) / snapshot.system_load.length).toFixed(1)}%`
+    : "---"
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* System Integrity Metrics -- top bar */}
       <div className="grid grid-cols-5 border-b border-border shrink-0">
-        <MetricCell label="MEMORY" value={SYSTEM_METRICS.memoryUsage} />
-        <MetricCell label="CPU" value={SYSTEM_METRICS.cpuLoad} />
-        <MetricCell label="LATENCY" value={SYSTEM_METRICS.latency} />
-        <MetricCell label="NODES" value={SYSTEM_METRICS.nodeStatus} />
-        <MetricCell label="INTEGRITY" value={SYSTEM_METRICS.integrity} />
+        <MetricCell label="MEMORY" value={memUsage} />
+        <MetricCell label="LATENCY" value={health ? `${health.latency}ms` : "---"} />
+        <MetricCell label="NODES" value={snapshot ? `${snapshot.active_nodes} ONLINE` : "---"} />
+        <MetricCell label="CONSENSUS" value={snapshot ? `${(Number(snapshot.consensus_ratio) * 100).toFixed(2)}%` : "---"} />
+        <MetricCell label="INTEGRITY" value={snapshot?.integrity_hash ?? "---"} />
       </div>
 
       {/* Secondary metrics */}
       <div className="grid grid-cols-4 border-b border-border shrink-0">
-        <MetricCell label="UPTIME" value={SYSTEM_METRICS.uptime} />
-        <MetricCell label="BLOCK" value={SYSTEM_METRICS.blockHeight} />
-        <MetricCell label="THROUGHPUT" value={SYSTEM_METRICS.throughput} />
-        <MetricCell label="PENDING TX" value={SYSTEM_METRICS.pendingTx} />
+        <MetricCell label="BLOCK" value={snapshot ? Number(snapshot.block_height).toLocaleString() : "---"} />
+        <MetricCell label="THROUGHPUT" value={snapshot ? `${Number(snapshot.throughput_tps).toLocaleString()} TPS` : "---"} />
+        <MetricCell label="RESERVE" value={snapshot ? Number(snapshot.reserve_index).toFixed(4) : "---"} />
+        <MetricCell label="DB LINK" value={health?.connected ? "ACTIVE" : "SEVERED"} />
       </div>
 
       {/* Scanner header */}
       <div className="flex items-center justify-between px-2 py-1 border-b border-border bg-surface shrink-0">
         <span className="text-[9px] text-muted tracking-wider uppercase">
-          SYSTEM SCANNER // REAL-TIME LOG
+          SYSTEM SCANNER // REAL-TIME LOG // SUPABASE
         </span>
         <div className="flex items-center gap-2">
-          <span className="inline-block w-1.5 h-1.5 bg-[#4a7a3a] animate-pulse" />
-          <span className="text-[9px] text-[#4a7a3a] tracking-wider">ACTIVE</span>
+          <span className={`inline-block w-1.5 h-1.5 ${error ? "bg-[#8b2020]" : "bg-[#4a7a3a]"} animate-pulse`} />
+          <span className={`text-[9px] tracking-wider ${error ? "text-[#8b2020]" : "text-[#4a7a3a]"}`}>
+            {error ? "ERROR" : "ACTIVE"}
+          </span>
         </div>
       </div>
 
       {/* Log output */}
-      <div ref={logRef} className="flex-1 overflow-y-auto bg-background">
-        {logs.map((log, i) => (
-          <div
-            key={`${log.timestamp}-${i}`}
-            className="flex items-start px-2 py-px text-[10px] border-b border-border hover:bg-surface transition-colors duration-75"
-          >
-            <span className="text-muted tabular-nums shrink-0" style={{ width: "130px" }}>
-              {log.timestamp}
-            </span>
-            <span className={`shrink-0 font-semibold ${levelColor(log.level)}`} style={{ width: "36px" }}>
-              {log.level}
-            </span>
-            <span className="text-gold shrink-0" style={{ width: "60px" }}>
-              {log.module}
-            </span>
-            <span className="text-foreground">{log.message}</span>
-          </div>
-        ))}
-      </div>
+      {error ? (
+        <div className="flex-1 flex items-center justify-center">
+          <span className="text-[10px] text-[#8b2020] tracking-wider uppercase">CRITICAL: LINK SEVERED</span>
+        </div>
+      ) : (
+        <div ref={logRef} className="flex-1 overflow-y-auto bg-background">
+          {(events ?? []).map((evt: Record<string, string>) => (
+            <div
+              key={evt.id}
+              className="flex items-start px-2 py-px text-[10px] border-b border-border hover:bg-surface"
+            >
+              <span className="text-muted tabular-nums shrink-0" style={{ width: "130px" }}>
+                {new Date(evt.created_at).toISOString().replace("T", " ").slice(0, 19)}
+              </span>
+              <span className={`shrink-0 font-semibold ${severityColor(evt.severity)}`} style={{ width: "50px" }}>
+                {evt.severity}
+              </span>
+              <span className="text-gold shrink-0" style={{ width: "80px" }}>
+                {evt.event_type}
+              </span>
+              <span className="text-muted shrink-0" style={{ width: "80px" }}>
+                {evt.source_node}
+              </span>
+              <span className="text-foreground">{evt.message}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

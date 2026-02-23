@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useConnectionHealth } from "@/lib/hooks"
 
 function getTimestamp() {
   const now = new Date()
@@ -9,6 +10,7 @@ function getTimestamp() {
 
 export function ClearanceBar() {
   const [time, setTime] = useState(getTimestamp())
+  const { data: health } = useConnectionHealth()
 
   useEffect(() => {
     const interval = setInterval(() => setTime(getTimestamp()), 1000)
@@ -27,6 +29,10 @@ export function ClearanceBar() {
         <span className="text-border-strong">|</span>
         <span className="text-muted text-[9px] tracking-wider uppercase">
           CLEARANCE: SOVEREIGN
+        </span>
+        <span className="text-border-strong">|</span>
+        <span className={`text-[9px] tracking-wider ${health?.connected ? "text-[#4a7a3a]" : "text-[#8b2020]"}`}>
+          {health?.connected ? "DB:LINKED" : "DB:SEVERED"}
         </span>
       </div>
 
