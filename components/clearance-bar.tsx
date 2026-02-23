@@ -43,10 +43,10 @@ export function ClearanceBar() {
           CLEARANCE: SOVEREIGN
         </span>
         <span className="text-border-strong">|</span>
-        <span className="flex items-center gap-1.5">
-          <span className={`inline-block w-1.5 h-1.5 ${status.color.split(" ")[0]} ${status.label === "LIVE" ? "animate-pulse" : ""}`} />
-          <span className={`text-[9px] tracking-wider uppercase ${status.color.split(" ")[1]}`}>
-            {status.label}
+        <span className="flex items-center gap-1.5" suppressHydrationWarning>
+          <span className={`inline-block w-1.5 h-1.5 ${mounted ? status.color.split(" ")[0] : "bg-muted"} ${mounted && status.label === "LIVE" ? "animate-pulse" : ""}`} />
+          <span className={`text-[9px] tracking-wider uppercase ${mounted ? status.color.split(" ")[1] : "text-muted"}`} suppressHydrationWarning>
+            {mounted ? status.label : "---"}
           </span>
         </span>
       </div>
@@ -56,8 +56,8 @@ export function ClearanceBar() {
           NODE: PRIMARY
         </span>
         <span className="text-border-strong">|</span>
-        <span className="text-[9px] text-gold tabular-nums">
-          {mounted ? time : ""}
+        <span className="text-[9px] text-gold tabular-nums" suppressHydrationWarning>
+          {time}
         </span>
       </div>
     </header>
