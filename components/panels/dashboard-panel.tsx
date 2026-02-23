@@ -41,7 +41,7 @@ function MiniChart({ data }: { data: number[] }) {
 
 export function DashboardPanel() {
   const { data: snapshot, error: snapError } = useLatestSnapshot()
-  const { events, isLoading: eventsLoading } = useRealtimeEvents(20)
+  const { events, isLoading: eventsLoading, channelStatus } = useRealtimeEvents(20)
   const { data: health } = useConnectionHealth()
 
   const isLoading = !snapshot && !snapError
@@ -103,7 +103,7 @@ export function DashboardPanel() {
           <div className="flex-1 overflow-hidden flex flex-col">
             <div className="px-2 py-1 border-b border-border bg-surface shrink-0">
               <span className="text-[9px] text-muted tracking-wider uppercase">
-                {'ACTIVITY LOG // '}{events.length}{' EVENTS'}{eventsLoading ? " // LOADING" : " // REALTIME"}
+                {'ACTIVITY LOG // '}{events.length}{' EVENTS // '}{eventsLoading ? "LOADING" : channelStatus}
               </span>
             </div>
             <div className="flex-1 overflow-y-auto">

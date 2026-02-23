@@ -21,7 +21,7 @@ function MetricCell({ label, value }: { label: string; value: string }) {
 }
 
 export function ScannerPanel() {
-  const { events, isLoading: eventsLoading } = useRealtimeEvents(100)
+  const { events, isLoading: eventsLoading, channelStatus } = useRealtimeEvents(100)
   const { data: snapshot } = useLatestSnapshot()
   const { data: health } = useConnectionHealth()
   const logRef = useRef<HTMLDivElement>(null)
@@ -58,12 +58,12 @@ export function ScannerPanel() {
       {/* Scanner header */}
       <div className="flex items-center justify-between px-2 py-1 border-b border-border bg-surface shrink-0">
         <span className="text-[9px] text-muted tracking-wider uppercase">
-          {'SYSTEM SCANNER // '}{eventsLoading ? "LOADING" : "REALTIME"}{' // '}{events.length}{' EVENTS'}
+          {'SYSTEM SCANNER // '}{eventsLoading ? "LOADING" : channelStatus}{' // '}{events.length}{' EVENTS'}
         </span>
         <div className="flex items-center gap-2">
-          <span className={`inline-block w-1.5 h-1.5 ${health?.connected ? "bg-success" : "bg-danger"} ${health?.connected ? "animate-pulse" : ""}`} />
-          <span className={`text-[9px] tracking-wider ${health?.connected ? "text-success" : "text-danger"}`}>
-            {health?.connected ? "ACTIVE" : "SEVERED"}
+          <span className={`inline-block w-1.5 h-1.5 ${channelStatus === "CONNECTED" ? "bg-success animate-pulse" : health?.connected ? "bg-gold" : "bg-danger"}`} />
+          <span className={`text-[9px] tracking-wider ${channelStatus === "CONNECTED" ? "text-success" : health?.connected ? "text-gold" : "text-danger"}`}>
+            {'WS:'}{channelStatus}
           </span>
         </div>
       </div>

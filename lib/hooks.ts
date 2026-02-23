@@ -9,9 +9,12 @@ const supabase = createClient()
 // ── Realtime: append-only subscription for structural_events ──
 export function useRealtimeEvents(initialLimit = 30) {
   const [events, setEvents] = useState<Record<string, string>[]>([])
-  const initialLoaded = useRef(false)
+  const [loaded, setLoaded] = useState(false)
+  const [channelStatus, setChannelStatus] = useState<string>("INITIALIZING")
 
   useEffect(() => {
+    let cancelled = false
+
     // Load initial batch
     async function loadInitial() {
       const { data } = await supabase
@@ -19,14 +22,14 @@ export function useRealtimeEvents(initialLimit = 30) {
         .select("*")
         .order("created_at", { ascending: false })
         .limit(initialLimit)
-      if (data) {
+      if (!cancelled && data) {
         setEvents(data.reverse())
-        initialLoaded.current = true
+        setLoaded(true)
       }
     }
     loadInitial()
 
-    // Subscribe to new inserts
+    // Subscribe to new inserts via Realtime
     const channel = supabase
       .channel("structural-events-realtime")
       .on(
@@ -36,14 +39,17 @@ export function useRealtimeEvents(initialLimit = 30) {
           setEvents((prev) => [...prev.slice(-200), payload.new as Record<string, string>])
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        if (!cancelled) setChannelStatus(status === "SUBSCRIBED" ? "CONNECTED" : status)
+      })
 
     return () => {
+      cancelled = true
       supabase.removeChannel(channel)
     }
   }, [initialLimit])
 
-  return { events, isLoading: !initialLoaded.current }
+  return { events, isLoading: !loaded, channelStatus }
 }
 
 // ── Dashboard: latest snapshot ──
