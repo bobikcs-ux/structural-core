@@ -16,10 +16,11 @@ interface PulseDashboardProps {
 export function PulseDashboard({ publicKeyBase64 }: PulseDashboardProps) {
   return (
     <IntegrityVerifier publicKeyBase64={publicKeyBase64}>
-      {(snapshot, systemState) => (
+      {(snapshot, systemState, history) => (
         <DashboardPanel 
           snapshot={snapshot} 
           systemState={systemState}
+          history={history}
         />
       )}
     </IntegrityVerifier>
