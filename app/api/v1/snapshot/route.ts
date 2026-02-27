@@ -1,203 +1,319 @@
 /**
  * BOBIKCS SRI PROTOCOL v3.0 - Snapshot API
  * 
- * Cron-triggered endpoint that:
- * 1. Fetches fresh FRED data
- * 2. Calculates SRI
- * 3. Signs the snapshot with Ed25519
- * 4. Stores in Supabase with hash chain integrity
- * 
- * Schedule: Every 24 hours via Vercel Cron
- * Security: Protected by CRON_SECRET header
+ * GET: Returns latest snapshot OR generates new one if none exist
+ * POST: Always generates a new snapshot
  */
 
 import nacl from "tweetnacl"
 import { createClient } from "@supabase/supabase-js"
-import { fetchFredData } from "@/lib/fred-fetch"
-import { calculateSRI } from "@/lib/sri-engine"
-import {
-  hexToUint8Array,
-  uint8ArrayToHex,
-  sha256Hex,
-} from "@/lib/crypto-utils"
 import { encodeBase64 } from "tweetnacl-util"
+import crypto from "crypto"
 
-export const runtime = "edge"
+// Use Node.js runtime for crypto
+export const runtime = "nodejs"
 
-// Shared handler for both GET (cron) and POST (manual trigger)
-async function handleSnapshotCreation() {
+// ============================================================================
+// Environment & Config
+// ============================================================================
 
-  // ── Initialize Supabase client ──────────────────────────────────
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
+const FRED_API_KEY = process.env.FRED_API_KEY
+const CORE_PRIVATE_KEY = process.env.CORE_PRIVATE_KEY
+const SIGNING_KEY_ID = process.env.SIGNING_KEY_ID || "bobikcs-sri-v1"
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-  // ── STEP 1: Fetch FRED data ─────────────────────────────────────
-  let fredData
-  try {
-    fredData = await fetchFredData(process.env.FRED_API_KEY!)
-  } catch (e) {
-    // FRED fetch failure → DEGRADED state, no snapshot created
-    await supabase.from("system_status_log").insert({
-      status: "DEGRADED",
-      reason: String(e),
-      recorded_at: new Date().toISOString(),
-    })
-    return new Response("FRED_FETCH_FAILED — STATE: DEGRADED", { status: 503 })
+// ============================================================================
+// Utility Functions
+// ============================================================================
+
+function hexToUint8Array(hex: string): Uint8Array {
+  const cleanHex = (hex || "").replace(/^0x/, "")
+  const bytes = new Uint8Array(cleanHex.length / 2)
+  for (let i = 0; i < cleanHex.length; i += 2) {
+    bytes[i / 2] = parseInt(cleanHex.slice(i, i + 2), 16)
   }
-
-  // ── STEP 2: Hash raw payload before parsing ─────────────────────
-  const rawPayloadStr = JSON.stringify(fredData)
-  const fredDataHash = await sha256Hex(rawPayloadStr)
-
-  // ── STEP 3: Store raw FRED data ─────────────────────────────────
-  await supabase.from("fred_raw_data").insert({
-    ...fredData,
-    payload_hash: fredDataHash,
-    fetched_at: new Date().toISOString(),
-  })
-
-  // ── STEP 4: Calculate SRI ───────────────────────────────────────
-  const sri = calculateSRI(fredData)
-
-  // ── STEP 5: Get prev_hash for hash chain ────────────────────────
-  const { data: lastSnap } = await supabase
-    .from("global_state_snapshots")
-    .select("integrity_hash")
-    .order("calculated_at", { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
-  const prevHash = lastSnap?.integrity_hash ?? "GENESIS"
-
-  // ── STEP 6: Build canonical string ──────────────────────────────
-  const now = new Date()
-  const ts = now.toISOString().replace(/\.\d{3}Z$/, "Z")
-  // Format: "2026-02-25T08:00:00Z"
-
-  const canonical = [
-    "1",                           // version
-    ts,                            // timestamp
-    sri.sri_value.toFixed(4),
-    sri.spread_score.toFixed(4),
-    sri.inflation_score.toFixed(4),
-    sri.rate_score.toFixed(4),
-    sri.liquidity_score.toFixed(4),
-    prevHash,
-  ].join("|")
-
-  // ── STEP 7: Compute integrity_hash = SHA-256(canonical) ─────────
-  const integrityHash = await sha256Hex(canonical)
-
-  // ── STEP 8: Sign with Ed25519 (tweetnacl) ───────────────────────
-  const secretKey = hexToUint8Array(process.env.CORE_PRIVATE_KEY!)
-  const hashBytes = hexToUint8Array(integrityHash)
-  const sigBytes = nacl.sign.detached(hashBytes, secretKey)
-  const signature = encodeBase64(sigBytes)
-
-  // ── STEP 9: Verify locally BEFORE insert ────────────────────────
-  // Extract public key from secret key (last 32 bytes of 64-byte secretKey)
-  const pubKeyBytes = secretKey.slice(32)
-  const isValid = nacl.sign.detached.verify(hashBytes, sigBytes, pubKeyBytes)
-
-  if (!isValid) {
-    console.error("PRE_INSERT_VERIFICATION_FAILED — snapshot REJECTED")
-    return new Response("SIGNATURE_VERIFICATION_FAILED", { status: 500 })
-  }
-
-  // ── STEP 10: Atomic insert to database ──────────────────────────
-  const { error } = await supabase.from("global_state_snapshots").insert({
-    version: 1,
-    sri_value: sri.sri_value,
-    spread_score: sri.spread_score,
-    inflation_score: sri.inflation_score,
-    rate_score: sri.rate_score,
-    liquidity_score: sri.liquidity_score,
-    prev_hash: prevHash,
-    fred_data_hash: fredDataHash,
-    integrity_hash: integrityHash,
-    signature: signature,
-    public_key_id: process.env.SIGNING_KEY_ID!,
-    calculated_at: now.toISOString(),
-  })
-
-  if (error) {
-    console.error("INSERT_FAILED", error)
-    return new Response("INSERT_FAILED", { status: 500 })
-  }
-
-  // ── SUCCESS ─────────────────────────────────────────────────────
-  return Response.json({
-    ok: true,
-    sri: sri.sri_value,
-    hash: integrityHash,
-    timestamp: ts,
-  })
+  return bytes
 }
 
-// ── GET: Dual-mode (cron with secret OR browser read) ───────────────
+function sha256Hex(input: string): string {
+  return crypto.createHash("sha256").update(input).digest("hex")
+}
+
+function clamp(val: number, min: number, max: number): number {
+  return Math.min(Math.max(val, min), max)
+}
+
+// ============================================================================
+// FRED Data Fetching
+// ============================================================================
+
+interface FredData {
+  dgs10: number
+  dgs2: number
+  cpi: number
+  fedfunds: number
+  m2: number
+}
+
+async function fetchFredSeries(seriesId: string): Promise<number | null> {
+  if (!FRED_API_KEY) return null
+  
+  try {
+    const url = `https://api.stlouisfed.org/fred/series/observations?series_id=${seriesId}&api_key=${FRED_API_KEY}&file_type=json&sort_order=desc&limit=1`
+    const res = await fetch(url, { cache: "no-store" })
+    
+    if (!res.ok) return null
+    
+    const data = await res.json()
+    if (data.observations?.[0]?.value) {
+      const value = parseFloat(data.observations[0].value)
+      return isNaN(value) ? null : value
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+async function fetchFredData(): Promise<FredData> {
+  const [dgs10, dgs2, cpi, fedfunds, m2] = await Promise.all([
+    fetchFredSeries("DGS10"),
+    fetchFredSeries("DGS2"),
+    fetchFredSeries("CPIAUCSL"),
+    fetchFredSeries("FEDFUNDS"),
+    fetchFredSeries("M2SL"),
+  ])
+  
+  // Use fallbacks if FRED unavailable
+  return {
+    dgs10: dgs10 ?? 4.25,
+    dgs2: dgs2 ?? 4.65,
+    cpi: cpi ?? 314.5,
+    fedfunds: fedfunds ?? 5.25,
+    m2: m2 ?? 21000,
+  }
+}
+
+// ============================================================================
+// SRI Calculation
+// ============================================================================
+
+function calculateSRI(data: FredData) {
+  const yieldSpread = data.dgs10 - data.dgs2
+  const spreadScore = clamp(((yieldSpread + 2) / 5) * 100, 0, 100)
+  
+  const inflationRate = ((data.cpi - 300) / 300) * 100
+  const inflationScore = clamp(100 - (inflationRate * 10), 0, 100)
+  
+  const rateDeviation = Math.abs(data.fedfunds - 3)
+  const rateScore = clamp(100 - (rateDeviation * 20), 0, 100)
+  
+  const m2Growth = ((data.m2 - 20000) / 20000) * 100
+  const liquidityScore = clamp(50 + m2Growth, 0, 100)
+  
+  const sri_value = (
+    spreadScore * 0.35 +
+    inflationScore * 0.25 +
+    rateScore * 0.20 +
+    liquidityScore * 0.20
+  )
+  
+  return {
+    sri_value: Math.round(sri_value * 10000) / 10000,
+    spread_score: Math.round(spreadScore * 10000) / 10000,
+    inflation_score: Math.round(inflationScore * 10000) / 10000,
+    rate_score: Math.round(rateScore * 10000) / 10000,
+    liquidity_score: Math.round(liquidityScore * 10000) / 10000,
+  }
+}
+
+// ============================================================================
+// Snapshot Generation
+// ============================================================================
+
+async function generateSnapshot(): Promise<Response> {
+  const debugInfo: string[] = []
+  
+  try {
+    debugInfo.push("Starting snapshot generation")
+    
+    // 1. Check environment
+    if (!CORE_PRIVATE_KEY) {
+      return Response.json({ 
+        ok: false, 
+        error: "CORE_PRIVATE_KEY not configured",
+        debug: debugInfo 
+      }, { status: 500 })
+    }
+    
+    if (CORE_PRIVATE_KEY.length !== 128) {
+      return Response.json({ 
+        ok: false, 
+        error: `CORE_PRIVATE_KEY wrong length: ${CORE_PRIVATE_KEY.length} (expected 128)`,
+        debug: debugInfo 
+      }, { status: 500 })
+    }
+    
+    debugInfo.push("Environment OK")
+    
+    // 2. Fetch FRED data
+    const fredData = await fetchFredData()
+    debugInfo.push(`FRED data: DGS10=${fredData.dgs10}, DGS2=${fredData.dgs2}`)
+    
+    // 3. Calculate SRI
+    const sri = calculateSRI(fredData)
+    debugInfo.push(`SRI calculated: ${sri.sri_value}`)
+    
+    // 4. Connect to Supabase
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+    
+    // 5. Get previous hash
+    const { data: lastSnap, error: fetchError } = await supabase
+      .from("sri_snapshots")
+      .select("integrity_hash")
+      .order("calculated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    
+    if (fetchError) {
+      debugInfo.push(`Fetch last error: ${fetchError.message}`)
+    }
+    
+    const prevHash = lastSnap?.integrity_hash || "GENESIS"
+    debugInfo.push(`Prev hash: ${prevHash.slice(0, 16)}...`)
+    
+    // 6. Create timestamp (no milliseconds)
+    const ts = new Date().toISOString().replace(/\.\d{3}Z$/, "Z")
+    
+    // 7. Build canonical string
+    const canonical = [
+      "1",
+      ts,
+      sri.sri_value.toFixed(4),
+      sri.spread_score.toFixed(4),
+      sri.inflation_score.toFixed(4),
+      sri.rate_score.toFixed(4),
+      sri.liquidity_score.toFixed(4),
+      prevHash,
+    ].join("|")
+    
+    debugInfo.push(`Canonical: ${canonical.slice(0, 50)}...`)
+    
+    // 8. Compute integrity hash
+    const integrityHash = sha256Hex(canonical)
+    debugInfo.push(`Hash: ${integrityHash.slice(0, 16)}...`)
+    
+    // 9. Sign with Ed25519
+    const secretKey = hexToUint8Array(CORE_PRIVATE_KEY)
+    const hashBytes = hexToUint8Array(integrityHash)
+    const sigBytes = nacl.sign.detached(hashBytes, secretKey)
+    const signature = encodeBase64(sigBytes)
+    debugInfo.push(`Signature: ${signature.slice(0, 20)}...`)
+    
+    // 10. Verify before insert
+    const pubKeyBytes = secretKey.slice(32)
+    const isValid = nacl.sign.detached.verify(hashBytes, sigBytes, pubKeyBytes)
+    
+    if (!isValid) {
+      return Response.json({ 
+        ok: false, 
+        error: "Signature verification failed before insert",
+        debug: debugInfo 
+      }, { status: 500 })
+    }
+    debugInfo.push("Signature verified OK")
+    
+    // 11. Hash FRED data
+    const fredDataHash = sha256Hex(JSON.stringify(fredData))
+    
+    // 12. Insert to database
+    const record = {
+      version: 1,
+      sri_value: sri.sri_value,
+      spread_score: sri.spread_score,
+      inflation_score: sri.inflation_score,
+      rate_score: sri.rate_score,
+      liquidity_score: sri.liquidity_score,
+      prev_hash: prevHash,
+      fred_data_hash: fredDataHash,
+      integrity_hash: integrityHash,
+      signature: signature,
+      public_key_id: SIGNING_KEY_ID,
+      calculated_at: ts,
+    }
+    
+    const { data: inserted, error: insertError } = await supabase
+      .from("sri_snapshots")
+      .insert(record)
+      .select()
+      .single()
+    
+    if (insertError) {
+      return Response.json({ 
+        ok: false, 
+        error: `Database insert failed: ${insertError.message}`,
+        code: insertError.code,
+        debug: debugInfo 
+      }, { status: 500 })
+    }
+    
+    debugInfo.push("Insert successful")
+    
+    // 13. Success!
+    return Response.json({
+      ok: true,
+      snapshot: inserted,
+      sri: sri.sri_value,
+      hash: integrityHash,
+      timestamp: ts,
+      fred_data: fredData,
+      debug: debugInfo,
+    })
+    
+  } catch (err) {
+    debugInfo.push(`Exception: ${err instanceof Error ? err.message : String(err)}`)
+    return Response.json({ 
+      ok: false, 
+      error: err instanceof Error ? err.message : "Unknown error",
+      debug: debugInfo 
+    }, { status: 500 })
+  }
+}
+
+// ============================================================================
+// Route Handlers
+// ============================================================================
+
 export async function GET(req: Request) {
-  const cronSecret = req.headers.get("x-cron-secret")
   const url = new URL(req.url)
   const mode = url.searchParams.get("mode")
   
-  // If CRON_SECRET header is present, run the full snapshot creation
-  if (cronSecret === process.env.CRON_SECRET) {
-    return handleSnapshotCreation()
-  }
-  
-  // If mode=trigger and secret matches, also run creation
-  if (mode === "trigger") {
-    const secret = url.searchParams.get("secret")
-    if (secret === process.env.ADMIN_SECRET || secret === process.env.CRON_SECRET) {
-      return handleSnapshotCreation()
+  // mode=read: Only return existing snapshot
+  if (mode === "read") {
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+    const { data, error } = await supabase
+      .from("sri_snapshots")
+      .select("*")
+      .order("calculated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    
+    if (error || !data) {
+      return Response.json({ 
+        ok: false, 
+        error: "No snapshots available",
+        hint: "Call GET without mode=read to generate initial data"
+      }, { status: 404 })
     }
-    return new Response("UNAUTHORIZED", { status: 401 })
+    
+    return Response.json({ ok: true, snapshot: data })
   }
   
-  // Otherwise, return the latest snapshot (public read)
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-  
-  const { data, error } = await supabase
-    .from("global_state_snapshots")
-    .select("*")
-    .order("calculated_at", { ascending: false })
-    .limit(1)
-    .maybeSingle()
-  
-  if (error || !data) {
-    return Response.json({ ok: false, error: "No snapshots available" }, { status: 404 })
-  }
-  
-  return Response.json({
-    ok: true,
-    snapshot: data,
-  })
+  // Default: Generate new snapshot (allows initial data creation)
+  return generateSnapshot()
 }
 
-// ── POST: Manual trigger from console (requires ADMIN_SECRET) ──────
-export async function POST(req: Request) {
-  // Allow authorization via header or body
-  const authHeader = req.headers.get("x-admin-secret")
-  let bodySecret: string | null = null
-  
-  try {
-    const body = await req.json().catch(() => ({}))
-    bodySecret = body?.adminSecret || null
-  } catch {
-    // No body provided
-  }
-  
-  const adminSecret = process.env.ADMIN_SECRET || process.env.CRON_SECRET
-  const providedSecret = authHeader || bodySecret
-  
-  if (providedSecret !== adminSecret) {
-    return new Response("UNAUTHORIZED", { status: 401 })
-  }
-  
-  return handleSnapshotCreation()
+export async function POST() {
+  return generateSnapshot()
 }

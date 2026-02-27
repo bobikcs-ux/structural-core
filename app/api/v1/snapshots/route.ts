@@ -18,7 +18,7 @@ export async function GET(req: Request) {
   )
 
   const { data, error } = await supabase
-    .from("global_state_snapshots")
+    .from("sri_snapshots")
     .select(`
       id,
       version,

@@ -8,10 +8,76 @@
  * Children only render when data is available.
  */
 
+import { useState } from "react"
 import { usePulse } from "@/hooks/usePulse"
 import { STATE_META, SystemState, getRiskCategory } from "@/lib/system-state"
 import type { SRISnapshot } from "@/lib/types"
-import { AlertTriangle, ShieldOff, Wifi, WifiOff, RefreshCw } from "lucide-react"
+import { AlertTriangle, ShieldOff, Wifi, WifiOff, RefreshCw, Zap, Loader2 } from "lucide-react"
+
+// ============================================================================
+// Generate Data Button Component
+// ============================================================================
+
+function GenerateDataButton({ onSuccess }: { onSuccess: () => void }) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
+  
+  const handleGenerate = async () => {
+    setLoading(true)
+    setError(null)
+    
+    try {
+      const res = await fetch("/api/v1/snapshot", { method: "POST" })
+      const data = await res.json()
+      
+      if (data.ok) {
+        setSuccess(true)
+        setTimeout(() => onSuccess(), 1000)
+      } else {
+        setError(data.error || "Generation failed")
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Network error")
+    } finally {
+      setLoading(false)
+    }
+  }
+  
+  if (success) {
+    return (
+      <div className="flex items-center gap-2 px-4 py-2 bg-emerald-900/30 border border-emerald-500/30 rounded">
+        <Zap className="h-4 w-4 text-emerald-400" />
+        <span className="font-mono text-sm text-emerald-400">Data generated! Reconnecting...</span>
+      </div>
+    )
+  }
+  
+  return (
+    <div className="flex flex-col items-center gap-3 mt-4">
+      <button
+        onClick={handleGenerate}
+        disabled={loading}
+        className="flex items-center gap-2 px-6 py-3 bg-[hsl(43,25%,55%)] text-[hsl(0,0%,2%)] 
+                   font-mono text-sm font-semibold rounded hover:bg-[hsl(43,25%,45%)] 
+                   transition-colors disabled:opacity-50"
+      >
+        {loading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Zap className="h-4 w-4" />
+        )}
+        {loading ? "GENERATING..." : "GENERATE INITIAL DATA"}
+      </button>
+      
+      {error && (
+        <div className="px-4 py-2 bg-red-900/20 border border-red-500/30 rounded max-w-sm">
+          <span className="font-mono text-xs text-red-400">{error}</span>
+        </div>
+      )}
+    </div>
+  )
+}
 
 // ============================================================================
 // Props
@@ -132,10 +198,14 @@ export function IntegrityVerifier({ publicKeyBase64, children }: IntegrityVerifi
             </>
           ) : (
             <>
-              <AlertTriangle className="h-8 w-8 text-amber-500" />
-              <span className="font-mono text-sm text-gray-500">
-                Waiting for first snapshot...
+              <AlertTriangle className="h-8 w-8 text-[hsl(43,25%,55%)]" />
+              <span className="font-mono text-sm text-gray-400">
+                No snapshots available
               </span>
+              <span className="font-mono text-xs text-gray-500 text-center max-w-sm">
+                The database is empty. Generate initial data to activate the system.
+              </span>
+              <GenerateDataButton onSuccess={reconnect} />
             </>
           )}
         </div>

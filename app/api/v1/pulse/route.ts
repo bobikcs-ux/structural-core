@@ -86,7 +86,7 @@ export async function GET(req: Request) {
 
       // ── Send latest snapshot immediately ────────────────────────
       const { data: snap } = await supabase
-        .from("global_state_snapshots")
+        .from("sri_snapshots")
         .select("*")
         .order("calculated_at", { ascending: false })
         .limit(1)
@@ -112,7 +112,7 @@ export async function GET(req: Request) {
           {
             event: "INSERT",
             schema: "public",
-            table: "global_state_snapshots",
+            table: "sri_snapshots",
           },
           (payload) => {
             send({
