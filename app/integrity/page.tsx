@@ -17,7 +17,7 @@ import {
   Link2, Clock, CheckCircle2, XCircle, RefreshCw,
   Copy, Check, ArrowLeft
 } from "lucide-react"
-import { buildCanonicalString, computeSHA256, verifySignatureOnly, base64ToUint8Array } from "@/lib/crypto-utils"
+import { buildCanonicalString, computeSHA256, verifySignature, decodeBase64 } from "@/lib/crypto-utils"
 import { loadVerifiedSnapshot } from "@/lib/system-state"
 import type { SRISnapshot } from "@/lib/types"
 
@@ -166,11 +166,11 @@ export default function IntegrityPage() {
         // Step 4: Verify signature
         let signatureValid = false
         if (hashMatch) {
-          const pubKeyBytes = base64ToUint8Array(publicKey)
-          signatureValid = await verifySignatureOnly(
+          // verifySignature takes (hashHex, signatureBase64, publicKeyBase64?)
+          signatureValid = verifySignature(
             snapshot.integrity_hash,
             snapshot.signature,
-            pubKeyBytes
+            publicKey
           )
         }
         
