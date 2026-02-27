@@ -1,259 +1,220 @@
-import { createClient } from "@/lib/supabase/server"
-import { DashboardHeader } from "@/components/dashboard/dashboard-header"
-import { DashboardGrid } from "@/components/dashboard/dashboard-grid"
-import { StatusSummary } from "@/components/dashboard/status-summary"
-import type { IntegrityRecord, DriftData } from "@/lib/types"
+/**
+ * Landing Page - Institutional Positioning
+ * Black/Gold minimal design with institutional messaging
+ */
 
-// Generate mock drift data for demonstration
-function generateDriftData(regionId: string): DriftData {
-  // Seeded random based on region ID for consistency
-  const seed = regionId.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0)
-  const random = (offset: number) => {
-    const x = Math.sin(seed + offset) * 10000
-    return x - Math.floor(x)
-  }
+import { Shield, Activity, Lock, Zap, ArrowRight, CheckCircle } from "lucide-react"
+import Link from "next/link"
 
-  const generateTrend = (days: number, baseChange: number): number[] => {
-    const data: number[] = []
-    let value = 100
-    for (let i = 0; i < days; i++) {
-      const change = (random(i) - 0.5) * 2 + baseChange / days
-      value += change
-      data.push(value)
-    }
-    return data
-  }
+// ============================================================================
+// Feature Card Component
+// ============================================================================
 
-  const change30d = (random(1) - 0.5) * 10
-  const change90d = (random(2) - 0.5) * 15
-
-  return {
-    trend_30d: generateTrend(30, change30d),
-    trend_90d: generateTrend(90, change90d),
-    change_30d: change30d,
-    change_90d: change90d,
-  }
-}
-
-// Fallback mock data for development/demo
-function getMockData(): IntegrityRecord[] {
-  return [
-    {
-      id: "1",
-      payload: {
-        region_id: "NA-EAST-1",
-        index: 2847.32,
-        status: "healthy",
-        quality: 0.98,
-        updated_at: new Date(Date.now() - 120000).toISOString(),
-      },
-      integrity_hash: "sha256:8f14e45f...b983c1d2",
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: "2",
-      payload: {
-        region_id: "NA-WEST-2",
-        index: 1923.87,
-        status: "healthy",
-        quality: 0.95,
-        updated_at: new Date(Date.now() - 300000).toISOString(),
-      },
-      integrity_hash: "sha256:7c82fa6c...a2e4f1b3",
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: "3",
-      payload: {
-        region_id: "EU-CENTRAL-1",
-        index: 3156.44,
-        status: "stale",
-        quality: 0.87,
-        updated_at: new Date(Date.now() - 1800000).toISOString(),
-      },
-      integrity_hash: "sha256:9b2c5e8a...d4f6a2c1",
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: "4",
-      payload: {
-        region_id: "EU-WEST-1",
-        index: 2654.91,
-        status: "healthy",
-        quality: 0.99,
-        updated_at: new Date(Date.now() - 60000).toISOString(),
-      },
-      integrity_hash: "sha256:1a3b5c7d...e9f1a2b3",
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: "5",
-      payload: {
-        region_id: "AP-SOUTH-1",
-        index: 1478.23,
-        status: "delayed",
-        quality: 0.82,
-        updated_at: new Date(Date.now() - 2400000).toISOString(),
-      },
-      integrity_hash: null,
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: "6",
-      payload: {
-        region_id: "AP-EAST-1",
-        index: 2103.56,
-        status: "healthy",
-        quality: 0.94,
-        updated_at: new Date(Date.now() - 180000).toISOString(),
-      },
-      integrity_hash: "sha256:4d6f8a1b...c3e5f7a9",
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: "7",
-      payload: {
-        region_id: "SA-EAST-1",
-        index: 987.65,
-        status: "offline",
-        quality: 0.0,
-        updated_at: new Date(Date.now() - 7200000).toISOString(),
-      },
-      integrity_hash: null,
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: "8",
-      payload: {
-        region_id: "ME-SOUTH-1",
-        index: 1567.89,
-        status: "healthy",
-        quality: 0.91,
-        updated_at: new Date(Date.now() - 240000).toISOString(),
-      },
-      integrity_hash: "sha256:2b4d6f8a...1c3e5f79",
-      created_at: new Date().toISOString(),
-    },
-  ]
-}
-
-async function getIntegrityData(): Promise<IntegrityRecord[]> {
-  try {
-    const supabase = await createClient()
-    
-    // Query the regions table directly and transform to expected format
-    const { data, error } = await supabase
-      .from("regions")
-      .select("id, region_id, region_name, index_value, status, quality, integrity_hash, trend_30d, trend_90d, updated_at, created_at")
-      .order("created_at", { ascending: false })
-
-    if (error) {
-      console.error("[v0] Supabase error:", error)
-      return getMockData()
-    }
-
-    if (!data || data.length === 0) {
-      console.log("[v0] No data from Supabase, using mock data")
-      return getMockData()
-    }
-
-    // Transform the regions data to match IntegrityRecord format
-    const transformedData: IntegrityRecord[] = data.map((row) => ({
-      id: row.id,
-      payload: {
-        region_id: row.region_id,
-        region_name: row.region_name,
-        index: Number(row.index_value),
-        status: row.status as "healthy" | "stale" | "delayed" | "offline",
-        quality: Number(row.quality),
-        updated_at: row.updated_at,
-        trend_30d: row.trend_30d?.map(Number) || [],
-        trend_90d: row.trend_90d?.map(Number) || [],
-      },
-      integrity_hash: row.integrity_hash,
-      created_at: row.created_at,
-    }))
-
-    return transformedData
-  } catch (error) {
-    console.error("[v0] Failed to fetch data:", error)
-    return getMockData()
-  }
-}
-
-export const dynamic = "force-dynamic"
-export const revalidate = 30
-
-export default async function DashboardPage() {
-  const records = await getIntegrityData()
-
-  // Generate drift data for each region
-  const driftDataMap: Record<string, DriftData> = {}
-  records.forEach((record) => {
-    driftDataMap[record.payload.region_id] = generateDriftData(record.payload.region_id)
-  })
-
-  // Calculate stats
-  const healthyCount = records.filter((r) => r.payload.status === "healthy").length
-  const staleCount = records.filter((r) => r.payload.status === "stale").length
-  const delayedCount = records.filter((r) => r.payload.status === "delayed").length
-  const offlineCount = records.filter((r) => r.payload.status === "offline").length
-  const verifiedCount = records.filter((r) => !!r.integrity_hash).length
-
-  // Format last updated time
-  const now = new Date()
-  const lastUpdated = now.toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  })
-
+function FeatureCard({ 
+  icon: Icon, 
+  title, 
+  description 
+}: { 
+  icon: React.ElementType
+  title: string
+  description: string 
+}) {
   return (
-    <div className="min-h-screen bg-background">
-      <DashboardHeader
-        totalRegions={records.length}
-        healthyCount={healthyCount}
-        verifiedCount={verifiedCount}
-        lastUpdated={lastUpdated}
-      />
+    <div className="group p-6 bg-[hsl(0,0%,4%)] border border-[hsl(0,0%,12%)] rounded-lg hover:border-[hsl(45,90%,50%)]/30 transition-all duration-300">
+      <div className="w-10 h-10 rounded bg-[hsl(45,90%,50%)]/10 flex items-center justify-center mb-4 group-hover:bg-[hsl(45,90%,50%)]/20 transition-colors">
+        <Icon className="w-5 h-5 text-[hsl(45,90%,50%)]" />
+      </div>
+      <h3 className="text-sm font-mono tracking-wide text-[hsl(45,20%,95%)] mb-2">
+        {title}
+      </h3>
+      <p className="text-xs font-mono text-[hsl(0,0%,50%)] leading-relaxed">
+        {description}
+      </p>
+    </div>
+  )
+}
 
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <div className="space-y-6">
-          {/* Status Summary */}
-          <StatusSummary
-            healthy={healthyCount}
-            stale={staleCount}
-            delayed={delayedCount}
-            offline={offlineCount}
-          />
+// ============================================================================
+// Stat Card Component
+// ============================================================================
 
-          {/* Section Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-sm font-semibold text-foreground">Regional Indices</h2>
-              <p className="text-xs text-muted-foreground">
-                Live market data with integrity verification
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                Auto-refresh: 30s
+function StatCard({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="text-center">
+      <div className="text-3xl md:text-4xl font-mono font-bold text-[hsl(45,90%,50%)] mb-1">
+        {value}
+      </div>
+      <div className="text-[10px] font-mono tracking-wider text-[hsl(0,0%,50%)] uppercase">
+        {label}
+      </div>
+    </div>
+  )
+}
+
+// ============================================================================
+// Main Landing Page
+// ============================================================================
+
+export default function LandingPage() {
+  return (
+    <div className="min-h-screen bg-[hsl(0,0%,2%)]">
+      {/* Hero Section */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-[hsl(45,90%,50%)]/5 via-transparent to-transparent" />
+        
+        <div className="relative max-w-5xl mx-auto px-6 pt-24 pb-20">
+          <div className="flex justify-center mb-8">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-[hsl(0,0%,4%)] border border-[hsl(0,0%,12%)] rounded-full">
+              <div className="w-1.5 h-1.5 rounded-full bg-[hsl(142,76%,46%)] animate-pulse" />
+              <span className="text-[10px] font-mono tracking-wider text-[hsl(0,0%,60%)]">
+                CRYPTOGRAPHICALLY VERIFIED
               </span>
-              <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-status-healthy" />
             </div>
           </div>
-
-          {/* Grid */}
-          <DashboardGrid records={records} driftDataMap={driftDataMap} />
-
-          {/* Footer */}
-          <footer className="border-t border-border pt-4 text-center">
-            <p className="text-xs text-muted-foreground">
-              Structural Core v1.0 | Prediction Market Integrity System
-            </p>
-          </footer>
+          
+          <h1 className="text-center mb-6">
+            <span className="block text-4xl md:text-5xl lg:text-6xl font-mono font-bold tracking-tight text-[hsl(45,20%,95%)] mb-4">
+              STRUCTURAL CORE
+            </span>
+            <span className="block text-lg md:text-xl font-mono text-[hsl(45,90%,50%)]">
+              Institutional Intelligence Infrastructure
+            </span>
+          </h1>
+          
+          <p className="max-w-2xl mx-auto text-center text-sm font-mono text-[hsl(0,0%,50%)] leading-relaxed mb-12">
+            Real-time macroeconomic integrity verification for prediction markets.
+            Ed25519 signed data feeds with deterministic SRI computation.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link
+              href="/intelligence"
+              className="flex items-center gap-2 px-6 py-3 bg-[hsl(45,90%,50%)] text-[hsl(0,0%,2%)] font-mono text-sm font-medium rounded hover:bg-[hsl(45,90%,55%)] transition-colors"
+            >
+              <Activity className="w-4 h-4" />
+              <span>VIEW INTELLIGENCE</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+            <Link
+              href="/scanner"
+              className="flex items-center gap-2 px-6 py-3 bg-[hsl(0,0%,4%)] border border-[hsl(0,0%,12%)] text-[hsl(45,20%,95%)] font-mono text-sm rounded hover:border-[hsl(45,90%,50%)]/30 transition-colors"
+            >
+              <Shield className="w-4 h-4" />
+              <span>VERIFY INTEGRITY</span>
+            </Link>
+          </div>
         </div>
-      </main>
+      </section>
+
+      {/* Stats Section */}
+      <section className="border-y border-[hsl(0,0%,12%)] bg-[hsl(0,0%,3%)]">
+        <div className="max-w-5xl mx-auto px-6 py-12">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            <StatCard value="7" label="FRED Series" />
+            <StatCard value="256" label="Bit Signatures" />
+            <StatCard value="<16ms" label="Verification" />
+            <StatCard value="100%" label="Chain Integrity" />
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="max-w-5xl mx-auto px-6 py-20">
+        <div className="text-center mb-12">
+          <h2 className="text-2xl font-mono font-bold text-[hsl(45,20%,95%)] mb-4">
+            INSTITUTIONAL GRADE
+          </h2>
+          <p className="text-sm font-mono text-[hsl(0,0%,50%)]">
+            Built for verification, not trust
+          </p>
+        </div>
+        
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <FeatureCard
+            icon={Activity}
+            title="SRI ENGINE"
+            description="Deterministic Structural Reserve Index computation from 7 FRED macroeconomic series."
+          />
+          <FeatureCard
+            icon={Shield}
+            title="ED25519 SIGNED"
+            description="Every snapshot cryptographically signed with Ed25519 for client-side verification."
+          />
+          <FeatureCard
+            icon={Lock}
+            title="HASH CHAIN"
+            description="Immutable chain of integrity hashes ensures tamper-evident data provenance."
+          />
+          <FeatureCard
+            icon={Zap}
+            title="REAL-TIME SSE"
+            description="Server-Sent Events deliver live updates with automatic integrity verification."
+          />
+        </div>
+      </section>
+
+      {/* Architecture Section */}
+      <section className="border-t border-[hsl(0,0%,12%)] bg-[hsl(0,0%,3%)]">
+        <div className="max-w-5xl mx-auto px-6 py-20">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div>
+              <h2 className="text-2xl font-mono font-bold text-[hsl(45,20%,95%)] mb-6">
+                VERIFICATION PIPELINE
+              </h2>
+              <div className="space-y-4">
+                {[
+                  "FRED API ingestion with rate limiting",
+                  "Canonical string construction (version|ts|sri|...)",
+                  "SHA-256 integrity hash computation",
+                  "Ed25519 signature generation (server-side)",
+                  "Client-side verification in <16ms",
+                  "State machine transition (LIVE/DEGRADED/UNTRUSTED)",
+                ].map((step, idx) => (
+                  <div key={idx} className="flex items-start gap-3">
+                    <CheckCircle className="w-4 h-4 text-[hsl(45,90%,50%)] mt-0.5 flex-shrink-0" />
+                    <span className="text-xs font-mono text-[hsl(0,0%,60%)]">{step}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div className="bg-[hsl(0,0%,4%)] border border-[hsl(0,0%,12%)] rounded-lg p-6">
+              <div className="text-[10px] font-mono text-[hsl(0,0%,40%)] mb-4">CANONICAL FORMAT</div>
+              <pre className="text-[11px] font-mono text-[hsl(45,90%,50%)] leading-relaxed overflow-x-auto">
+{`"{version}|{ts}|{sri}|{spread}|
+{inflation}|{rate}|{liquidity}|
+{prev_hash}"`}
+              </pre>
+              <div className="mt-6 pt-6 border-t border-[hsl(0,0%,12%)]">
+                <div className="text-[10px] font-mono text-[hsl(0,0%,40%)] mb-2">SRI FORMULA</div>
+                <pre className="text-[10px] font-mono text-[hsl(0,0%,60%)]">
+{`SRI = 0.35*spread + 0.25*inflation
+    + 0.20*rate + 0.20*liquidity`}
+                </pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-[hsl(0,0%,12%)]">
+        <div className="max-w-5xl mx-auto px-6 py-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-6 h-6 rounded bg-[hsl(45,90%,50%)] flex items-center justify-center">
+                <span className="text-[hsl(0,0%,2%)] font-mono font-bold text-[10px]">SC</span>
+              </div>
+              <span className="text-[10px] font-mono tracking-wider text-[hsl(0,0%,40%)]">
+                STRUCTURAL CORE v3.0
+              </span>
+            </div>
+            <div className="text-[10px] font-mono text-[hsl(0,0%,40%)]">
+              BOBIKCS SRI PROTOCOL
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }

@@ -27,32 +27,44 @@
   }
 
   .dark {
-    --background: 220 20% 4%;
-    --foreground: 210 20% 98%;
-    --card: 220 20% 6%;
-    --card-foreground: 210 20% 98%;
-    --popover: 220 20% 6%;
-    --popover-foreground: 210 20% 98%;
-    --primary: 142 76% 46%;
-    --primary-foreground: 0 0% 0%;
-    --secondary: 220 20% 12%;
-    --secondary-foreground: 210 20% 98%;
-    --muted: 220 15% 15%;
-    --muted-foreground: 220 10% 55%;
-    --accent: 220 20% 12%;
-    --accent-foreground: 210 20% 98%;
+    --background: 0 0% 2%;
+    --foreground: 45 20% 95%;
+    --card: 0 0% 4%;
+    --card-foreground: 45 20% 95%;
+    --popover: 0 0% 4%;
+    --popover-foreground: 45 20% 95%;
+    --primary: 45 90% 50%;
+    --primary-foreground: 0 0% 2%;
+    --secondary: 0 0% 8%;
+    --secondary-foreground: 45 20% 95%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 50%;
+    --accent: 45 90% 50%;
+    --accent-foreground: 0 0% 2%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
-    --border: 220 15% 15%;
-    --input: 220 15% 15%;
-    --ring: 142 76% 46%;
+    --border: 0 0% 12%;
+    --input: 0 0% 12%;
+    --ring: 45 90% 50%;
 
-    /* Custom dashboard tokens */
+    /* Institutional Design Tokens - Black/Gold */
+    --gold: 45 90% 50%;
+    --gold-muted: 45 60% 40%;
+    --gold-dim: 45 40% 25%;
+    --surface-0: 0 0% 2%;
+    --surface-1: 0 0% 4%;
+    --surface-2: 0 0% 6%;
+    --surface-3: 0 0% 8%;
+    --text-primary: 45 20% 95%;
+    --text-secondary: 0 0% 60%;
+    --text-muted: 0 0% 40%;
+    
+    /* Status colors */
     --status-healthy: 142 76% 46%;
     --status-warning: 45 93% 47%;
     --status-offline: 0 72% 51%;
-    --surface-elevated: 220 20% 8%;
-    --glow-green: 142 76% 46%;
+    --surface-elevated: 0 0% 6%;
+    --glow-gold: 45 90% 50%;
   }
 }
 
