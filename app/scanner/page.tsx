@@ -36,28 +36,42 @@ export default function ScannerPage() {
   const [results, setResults] = useState<VerificationResult[]>([])
   const [copied, setCopied] = useState<string | null>(null)
 
-  // Fetch latest snapshot from DB or session
+  // Fetch latest snapshot from session, DB, or direct API
   const fetchSnapshot = async () => {
     setLoading(true)
     try {
-      // First try session storage
+      // First try session storage (from Intelligence page)
       const stored = sessionStorage.getItem("bobikcs_last_verified_snapshot")
       if (stored) {
-        setSnapshot(JSON.parse(stored))
-        setLoading(false)
-        return
+        const parsed = JSON.parse(stored)
+        if (parsed && parsed.integrity_hash) {
+          setSnapshot(parsed)
+          setLoading(false)
+          return
+        }
       }
       
-      // Otherwise fetch from API
-      const res = await fetch("/api/v1/snapshots?limit=1")
-      if (res.ok) {
-        const data = await res.json()
-        if (data.snapshots && data.snapshots.length > 0) {
-          setSnapshot(data.snapshots[0])
+      // Try snapshots list API
+      const listRes = await fetch("/api/v1/snapshots?limit=1")
+      if (listRes.ok) {
+        const listData = await listRes.json()
+        if (listData.snapshots && listData.snapshots.length > 0) {
+          setSnapshot(listData.snapshots[0])
+          setLoading(false)
+          return
+        }
+      }
+      
+      // Try direct snapshot API
+      const directRes = await fetch("/api/v1/snapshot")
+      if (directRes.ok) {
+        const directData = await directRes.json()
+        if (directData.snapshot) {
+          setSnapshot(directData.snapshot)
         }
       }
     } catch (err) {
-      console.error("Failed to fetch:", err)
+      console.error("Failed to fetch snapshot:", err)
     } finally {
       setLoading(false)
     }
@@ -213,6 +227,43 @@ export default function ScannerPage() {
                   <div className="text-sm font-mono text-[hsl(0,0%,90%)]">
                     {snapshot.calculated_at}
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Canonical String Visualization */}
+            <div className="bg-[hsl(0,0%,4%)] border border-[hsl(0,0%,12%)] rounded-lg p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-sm font-mono text-[hsl(0,0%,50%)] uppercase tracking-wider">
+                  Canonical String
+                </h2>
+                <span className="text-[9px] font-mono text-[hsl(0,0%,40%)]">
+                  SHA-256 INPUT
+                </span>
+              </div>
+              
+              <div className="p-4 bg-[hsl(0,0%,3%)] rounded border border-[hsl(0,0%,10%)] mb-4">
+                <code className="text-[10px] font-mono text-[hsl(43,25%,55%)] break-all leading-relaxed">
+                  {`${snapshot.version}|${snapshot.calculated_at}|${snapshot.sri_value.toFixed(4)}|${snapshot.spread_score.toFixed(4)}|${snapshot.inflation_score.toFixed(4)}|${snapshot.rate_score.toFixed(4)}|${snapshot.liquidity_score.toFixed(4)}|${snapshot.prev_hash}`}
+                </code>
+              </div>
+              
+              <div className="grid grid-cols-4 gap-2 text-[9px] font-mono">
+                <div className="p-2 bg-[hsl(0,0%,6%)] rounded">
+                  <div className="text-[hsl(0,0%,40%)] mb-1">VERSION</div>
+                  <div className="text-[hsl(0,0%,70%)]">{snapshot.version}</div>
+                </div>
+                <div className="p-2 bg-[hsl(0,0%,6%)] rounded">
+                  <div className="text-[hsl(0,0%,40%)] mb-1">TIMESTAMP</div>
+                  <div className="text-[hsl(0,0%,70%)] truncate">{snapshot.calculated_at.split("T")[1]}</div>
+                </div>
+                <div className="p-2 bg-[hsl(0,0%,6%)] rounded">
+                  <div className="text-[hsl(0,0%,40%)] mb-1">SRI</div>
+                  <div className="text-[hsl(43,25%,55%)]">{snapshot.sri_value.toFixed(4)}</div>
+                </div>
+                <div className="p-2 bg-[hsl(0,0%,6%)] rounded">
+                  <div className="text-[hsl(0,0%,40%)] mb-1">PREV_HASH</div>
+                  <div className="text-[hsl(0,0%,70%)] truncate">{snapshot.prev_hash.slice(0, 8)}...</div>
                 </div>
               </div>
             </div>

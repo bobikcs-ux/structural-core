@@ -19,15 +19,20 @@ const PUBLIC_ROUTES = [
   "/pulse",
   "/scanner", 
   "/integrity",
+  "/intelligence",
+  "/simulations",
+  "/reports",        // Public reports access
+  "/console",        // Admin console (for manual triggers)
+  "/access",
   "/api/v1/pulse",
   "/api/v1/keys",
-  "/api/v1/snapshot", // Allow cron access
+  "/api/v1/snapshot",
+  "/api/v1/snapshots",
 ]
 
 const PRIVATE_ROUTES = [
   "/scenario",
   "/analytics",
-  "/reports",
   "/api/v1/private",
 ]
 

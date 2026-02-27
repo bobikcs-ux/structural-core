@@ -191,7 +191,7 @@ export default function ConsolePage() {
         <div className="mb-8 p-4 bg-[hsl(0,0%,4%)] border border-[hsl(0,0%,12%)] rounded-lg">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <h2 className="text-sm font-mono text-[hsl(0,0%,90%)] mb-1">Manual Snapshot Trigger</h2>
+              <h2 className="text-sm font-mono text-[hsl(0,0%,90%)] mb-1">Force System Update</h2>
               <p className="text-[10px] font-mono text-[hsl(0,0%,50%)]">
                 Fetch fresh FRED data, compute SRI, sign with Ed25519, and persist to database
               </p>
@@ -206,7 +206,7 @@ export default function ConsolePage() {
               ) : (
                 <Activity className="w-4 h-4" />
               )}
-              {triggering ? "PROCESSING..." : "TRIGGER UPDATE"}
+              {triggering ? "PROCESSING..." : "FORCE SYSTEM UPDATE"}
             </button>
           </div>
           

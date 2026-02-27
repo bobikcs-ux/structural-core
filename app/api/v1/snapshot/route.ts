@@ -136,13 +136,47 @@ async function handleSnapshotCreation() {
   })
 }
 
-// ── GET: Cron-triggered (requires CRON_SECRET) ──────────────────────
+// ── GET: Dual-mode (cron with secret OR browser read) ───────────────
 export async function GET(req: Request) {
   const cronSecret = req.headers.get("x-cron-secret")
-  if (cronSecret !== process.env.CRON_SECRET) {
+  const url = new URL(req.url)
+  const mode = url.searchParams.get("mode")
+  
+  // If CRON_SECRET header is present, run the full snapshot creation
+  if (cronSecret === process.env.CRON_SECRET) {
+    return handleSnapshotCreation()
+  }
+  
+  // If mode=trigger and secret matches, also run creation
+  if (mode === "trigger") {
+    const secret = url.searchParams.get("secret")
+    if (secret === process.env.ADMIN_SECRET || secret === process.env.CRON_SECRET) {
+      return handleSnapshotCreation()
+    }
     return new Response("UNAUTHORIZED", { status: 401 })
   }
-  return handleSnapshotCreation()
+  
+  // Otherwise, return the latest snapshot (public read)
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+  
+  const { data, error } = await supabase
+    .from("global_state_snapshots")
+    .select("*")
+    .order("calculated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  
+  if (error || !data) {
+    return Response.json({ ok: false, error: "No snapshots available" }, { status: 404 })
+  }
+  
+  return Response.json({
+    ok: true,
+    snapshot: data,
+  })
 }
 
 // ── POST: Manual trigger from console (requires ADMIN_SECRET) ──────
