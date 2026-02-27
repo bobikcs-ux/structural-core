@@ -199,6 +199,21 @@ export async function computeSHA256(input: string): Promise<string> {
 }
 
 /**
+ * Alias for computeSHA256 - used in Edge runtime
+ */
+export async function sha256Hex(input: string): Promise<string> {
+  return computeSHA256(input)
+}
+
+/**
+ * Clamps a value between min and max
+ * Used for SRI score normalization
+ */
+export function clamp(val: number, min: number, max: number): number {
+  return Math.min(Math.max(val, min), max)
+}
+
+/**
  * Computes the integrity hash for a snapshot
  * integrity_hash = SHA-256(canonical_string) → lowercase hex
  */
