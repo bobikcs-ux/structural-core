@@ -65,11 +65,13 @@ export default function IntelligencePage() {
 
   return (
     <IntegrityVerifier systemState={systemState} onReconnect={reconnect}>
-      <DashboardPanel
-        snapshot={displaySnapshot}
-        systemState={systemState}
-        history={[]}
-      />
+      {(verifiedSnapshot, verifiedState) => (
+        <DashboardPanel
+          snapshot={verifiedSnapshot || displaySnapshot}
+          systemState={verifiedState}
+          history={[]}
+        />
+      )}
     </IntegrityVerifier>
   )
 }
