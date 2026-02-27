@@ -137,10 +137,26 @@ export function usePulse(publicKeyBase64: string): UsePulseReturn {
 
     es.onmessage = (e) => {
       try {
+        // Skip empty or heartbeat messages
+        if (!e.data || e.data === "" || e.data === "ping") {
+          lastHeartbeat.current = Date.now()
+          return
+        }
+        
         const snap: SRISnapshot = JSON.parse(e.data)
+        
+        // Guard: ensure snap is a valid object with required fields
+        if (!snap || typeof snap !== "object" || !snap.integrity_hash) {
+          lastHeartbeat.current = Date.now() // Still update heartbeat
+          return
+        }
+        
         onNewSnap(snap)
       } catch (err) {
-        setError(`Failed to parse snapshot: ${err instanceof Error ? err.message : String(err)}`)
+        // Don't set error for parse failures on heartbeats
+        if (e.data && e.data !== "ping") {
+          setError(`Failed to parse snapshot: ${err instanceof Error ? err.message : String(err)}`)
+        }
       }
     }
 

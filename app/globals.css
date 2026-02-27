@@ -28,43 +28,44 @@
 
   .dark {
     --background: 0 0% 2%;
-    --foreground: 45 20% 95%;
+    --foreground: 0 0% 90%;
     --card: 0 0% 4%;
-    --card-foreground: 45 20% 95%;
+    --card-foreground: 0 0% 90%;
     --popover: 0 0% 4%;
-    --popover-foreground: 45 20% 95%;
-    --primary: 45 90% 50%;
+    --popover-foreground: 0 0% 90%;
+    --primary: 43 25% 55%;
     --primary-foreground: 0 0% 2%;
     --secondary: 0 0% 8%;
-    --secondary-foreground: 45 20% 95%;
+    --secondary-foreground: 0 0% 90%;
     --muted: 0 0% 12%;
     --muted-foreground: 0 0% 50%;
-    --accent: 45 90% 50%;
+    --accent: 43 25% 55%;
     --accent-foreground: 0 0% 2%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 12%;
+    --border: 0 0% 15%;
     --input: 0 0% 12%;
-    --ring: 45 90% 50%;
+    --ring: 43 20% 35%;
 
-    /* Institutional Design Tokens - Black/Gold */
-    --gold: 45 90% 50%;
-    --gold-muted: 45 60% 40%;
-    --gold-dim: 45 40% 25%;
+    /* Institutional Design Tokens - Black/Muted Gold */
+    --gold: 43 25% 55%;
+    --gold-muted: 43 20% 45%;
+    --gold-dim: 43 15% 30%;
+    --gold-hover: 43 20% 35%;
     --surface-0: 0 0% 2%;
     --surface-1: 0 0% 4%;
     --surface-2: 0 0% 6%;
     --surface-3: 0 0% 8%;
-    --text-primary: 45 20% 95%;
+    --text-primary: 0 0% 90%;
     --text-secondary: 0 0% 60%;
     --text-muted: 0 0% 40%;
     
     /* Status colors */
-    --status-healthy: 142 76% 46%;
-    --status-warning: 45 93% 47%;
-    --status-offline: 0 72% 51%;
+    --status-healthy: 142 50% 40%;
+    --status-warning: 43 50% 50%;
+    --status-offline: 0 60% 45%;
     --surface-elevated: 0 0% 6%;
-    --glow-gold: 45 90% 50%;
+    --glow-gold: 43 25% 55%;
   }
 }
 

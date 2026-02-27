@@ -366,9 +366,17 @@ export function verifySignature(
   publicKeyBase64?: string
 ): boolean {
   try {
+    // Null/undefined checks
+    if (!hashHex || !signatureBase64) {
+      return false
+    }
+    
+    // Clean the public key (remove newlines if present)
+    const cleanKey = (publicKeyBase64 || "").replace(/\\n/g, "").replace(/\n/g, "").trim()
+    
     let publicKey: Uint8Array
-    if (publicKeyBase64) {
-      publicKey = decodeBase64(publicKeyBase64)
+    if (cleanKey) {
+      publicKey = decodeBase64(cleanKey)
     } else {
       publicKey = loadPublicKey()
     }

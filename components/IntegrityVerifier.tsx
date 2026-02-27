@@ -27,8 +27,11 @@ interface IntegrityVerifierProps {
 // ============================================================================
 
 export function IntegrityVerifier({ publicKeyBase64, children }: IntegrityVerifierProps) {
-  const { snapshot, frozenSnap, systemState, isConnecting, error, reconnect } = usePulse(publicKeyBase64)
-  const meta = STATE_META[systemState]
+  // Safely handle potentially missing public key
+  const safePublicKey = (publicKeyBase64 || "").replace(/\\n/g, "").replace(/\n/g, "").trim()
+  
+  const { snapshot, frozenSnap, systemState, isConnecting, error, reconnect } = usePulse(safePublicKey)
+  const meta = STATE_META[systemState] || STATE_META.INITIALIZING
 
   // ── UNTRUSTED STATE: Kill switch overlay ──────────────────────
   if (systemState === "UNTRUSTED") {
@@ -141,6 +144,23 @@ export function IntegrityVerifier({ publicKeyBase64, children }: IntegrityVerifi
   }
 
   // ── LIVE / DEGRADED STATE: Render children ────────────────────
+  // Wrap children render in try-catch to prevent full component crash
+  let renderedChildren: React.ReactNode = null
+  try {
+    renderedChildren = children(snapshot, systemState)
+  } catch (renderError) {
+    renderedChildren = (
+      <div className="min-h-screen flex items-center justify-center bg-[hsl(0,0%,2%)]">
+        <div className="text-center p-8">
+          <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
+          <p className="font-mono text-sm text-gray-400">
+            Render error: {renderError instanceof Error ? renderError.message : "Unknown error"}
+          </p>
+        </div>
+      </div>
+    )
+  }
+  
   return (
     <div 
       style={{ 
@@ -159,7 +179,7 @@ export function IntegrityVerifier({ publicKeyBase64, children }: IntegrityVerifi
         </div>
       )}
       
-      {children(snapshot, systemState)}
+      {renderedChildren}
     </div>
   )
 }

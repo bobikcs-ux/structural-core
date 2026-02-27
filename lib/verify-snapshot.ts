@@ -37,23 +37,35 @@ export type VerifyResult =
  * @returns VerifyResult indicating success or failure reason
  */
 export async function verifySnapshot(
-  snap: SRISnapshot,
+  snap: SRISnapshot | null | undefined,
   publicKeyBase64: string
 ): Promise<VerifyResult> {
   try {
+    // ── GUARD: Check for null/undefined snapshot ───────────────
+    if (!snap) {
+      return { ok: false, reason: "EXCEPTION", detail: "Snapshot is null or undefined" }
+    }
+    
+    // ── GUARD: Check for required fields ───────────────────────
+    if (typeof snap.calculated_at !== "string" || 
+        typeof snap.integrity_hash !== "string" ||
+        typeof snap.signature !== "string") {
+      return { ok: false, reason: "EXCEPTION", detail: "Missing required snapshot fields" }
+    }
+    
     // ── STEP 1: Reconstruct canonical string ───────────────────
     // Safety: strip ms even if API accidentally returns them
-    const ts = snap.calculated_at.replace(/\.\d{3}Z$/, "Z")
+    const ts = (snap.calculated_at || "").replace(/\.\d{3}Z$/, "Z")
 
     const canonical = [
-      String(snap.version),              // "1" ← integer, NEVER "1.0"
+      String(snap.version ?? 1),         // "1" ← integer, NEVER "1.0"
       ts,                                // "2026-02-25T08:00:00Z"
-      snap.sri_value.toFixed(4),
-      snap.spread_score.toFixed(4),
-      snap.inflation_score.toFixed(4),
-      snap.rate_score.toFixed(4),
-      snap.liquidity_score.toFixed(4),
-      snap.prev_hash,                    // hex or "GENESIS"
+      Number(snap.sri_value || 0).toFixed(4),
+      Number(snap.spread_score || 0).toFixed(4),
+      Number(snap.inflation_score || 0).toFixed(4),
+      Number(snap.rate_score || 0).toFixed(4),
+      Number(snap.liquidity_score || 0).toFixed(4),
+      String(snap.prev_hash || "GENESIS"),  // hex or "GENESIS"
     ].join("|")
 
     // ── STEP 2: SHA-256 → compare with stored integrity_hash ───
