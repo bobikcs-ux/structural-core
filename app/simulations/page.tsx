@@ -73,17 +73,24 @@ export default function SimulationsPage() {
     shockType: "YIELD_INVERSION",
     magnitude: 1.0,
     duration: 30,
-    ...SHOCK_PRESETS.YIELD_INVERSION,
+    spreadDelta: -0.3,
+    inflationDelta: 0.05,
+    rateDelta: 0.1,
+    liquidityDelta: -0.1,
   })
   
   const [result, setResult] = useState<SimulationResult | null>(null)
   const [running, setRunning] = useState(false)
 
   const handleShockTypeChange = (type: ShockType) => {
+    const preset = SHOCK_PRESETS[type]
     setParams({
       ...params,
       shockType: type,
-      ...SHOCK_PRESETS[type],
+      spreadDelta: preset.spreadDelta ?? 0,
+      inflationDelta: preset.inflationDelta ?? 0,
+      rateDelta: preset.rateDelta ?? 0,
+      liquidityDelta: preset.liquidityDelta ?? 0,
     })
     setResult(null)
   }
@@ -137,7 +144,10 @@ export default function SimulationsPage() {
       shockType: "YIELD_INVERSION",
       magnitude: 1.0,
       duration: 30,
-      ...SHOCK_PRESETS.YIELD_INVERSION,
+      spreadDelta: -0.3,
+      inflationDelta: 0.05,
+      rateDelta: 0.1,
+      liquidityDelta: -0.1,
     })
     setResult(null)
   }
