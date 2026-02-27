@@ -2,6 +2,10 @@
   "name": "structural-core",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=18.17.0"
+  },
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
