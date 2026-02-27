@@ -93,15 +93,8 @@ export async function GET(req: Request) {
         .maybeSingle()
 
       if (snap) {
-        send({
-          type: "snapshot",
-          data: normalizeSnapshot(snap),
-        })
-      } else {
-        send({
-          type: "status",
-          message: "No snapshots available yet",
-        })
+        // Send snapshot directly (not wrapped)
+        send(normalizeSnapshot(snap))
       }
 
       // ── Subscribe to new inserts via Supabase Realtime ──────────
@@ -115,10 +108,8 @@ export async function GET(req: Request) {
             table: "sri_snapshots",
           },
           (payload) => {
-            send({
-              type: "snapshot",
-              data: normalizeSnapshot(payload.new as Record<string, unknown>),
-            })
+            // Send snapshot directly (not wrapped)
+            send(normalizeSnapshot(payload.new as Record<string, unknown>))
           }
         )
         .subscribe()

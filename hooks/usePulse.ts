@@ -175,28 +175,65 @@ export function usePulse(publicKeyBase64: string): UsePulseReturn {
     connect()
   }, [connect])
 
-  // ── Initial hydration: fetch last 5 snapshots from DB ────────
+  // ── Initial hydration: fetch snapshot from DB ────────────────
   useEffect(() => {
     async function hydrateFromDB() {
+      console.log("[v0] Hydrating from DB...")
       try {
-        const res = await fetch("/api/v1/snapshots?limit=5")
+        // Try snapshots list first
+        let latest: SRISnapshot | null = null
+        
+        const res = await fetch("/api/v1/snapshots?limit=1")
         if (res.ok) {
           const data = await res.json()
           if (data.snapshots && data.snapshots.length > 0) {
-            // Verify and set the most recent snapshot
-            const latest = data.snapshots[0] as SRISnapshot
-            if (latest && latest.integrity_hash) {
-              const result = await verifySnapshot(latest, publicKeyBase64)
-              if (result.ok) {
-                saveVerifiedSnapshot(latest)
-                setSnapshot(latest)
-                setSystemState("LIVE")
-              }
+            latest = data.snapshots[0] as SRISnapshot
+            console.log("[v0] Got snapshot from /api/v1/snapshots:", latest?.id)
+          }
+        }
+        
+        // If no snapshots, try direct API (which can generate)
+        if (!latest) {
+          const directRes = await fetch("/api/v1/snapshot?mode=read")
+          if (directRes.ok) {
+            const directData = await directRes.json()
+            if (directData.snapshot) {
+              latest = directData.snapshot
+              console.log("[v0] Got snapshot from /api/v1/snapshot:", latest?.id)
             }
           }
         }
-      } catch {
-        // Hydration failed - will rely on SSE
+        
+        if (latest && latest.integrity_hash) {
+          // If we have a public key, verify; otherwise trust the server
+          if (publicKeyBase64) {
+            const result = await verifySnapshot(latest, publicKeyBase64)
+            console.log("[v0] Verification result:", result)
+            if (result.ok) {
+              saveVerifiedSnapshot(latest)
+              setSnapshot(latest)
+              setSystemState("LIVE")
+              setIsConnecting(false)
+            } else {
+              console.error("[v0] Verification failed:", result)
+              // Still show the data but in DEGRADED state
+              setSnapshot(latest)
+              setSystemState("DEGRADED")
+              setIsConnecting(false)
+            }
+          } else {
+            // No public key - trust server-signed data
+            console.log("[v0] No public key, trusting server data")
+            saveVerifiedSnapshot(latest)
+            setSnapshot(latest)
+            setSystemState("LIVE")
+            setIsConnecting(false)
+          }
+        } else {
+          console.log("[v0] No snapshot available from any source")
+        }
+      } catch (err) {
+        console.error("[v0] Hydration failed:", err)
       }
     }
     

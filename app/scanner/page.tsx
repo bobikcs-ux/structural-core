@@ -21,7 +21,9 @@ import {
 import { buildCanonicalString, computeSHA256, verifySignature } from "@/lib/crypto-utils"
 import type { SRISnapshot } from "@/lib/types"
 
-const PUBLIC_KEY = process.env.NEXT_PUBLIC_BOBIKCS_PUBLIC_KEY_BASE64 || ""
+// Use either env var name (they should be the same key)
+const PUBLIC_KEY = process.env.NEXT_PUBLIC_BOBIKCS_PUBLIC_KEY_BASE64 || 
+                   process.env.NEXT_PUBLIC_SIGNING_KEY || ""
 
 interface VerificationResult {
   step: string
@@ -96,16 +98,19 @@ export default function ScannerPage() {
     await new Promise(r => setTimeout(r, 300))
 
     // Step 1: Build canonical string
-    const canonical = buildCanonicalString({
-      version: snapshot.version,
-      calculated_at: snapshot.calculated_at,
-      sri_value: snapshot.sri_value,
-      spread_score: snapshot.spread_score,
-      inflation_score: snapshot.inflation_score,
-      rate_score: snapshot.rate_score,
-      liquidity_score: snapshot.liquidity_score,
-      prev_hash: snapshot.prev_hash,
-    })
+    // Format MUST match backend exactly: version|timestamp|sri|spread|inflation|rate|liquidity|prev_hash
+    // All numbers with .toFixed(4), timestamp without milliseconds
+    const ts = (snapshot.calculated_at || "").replace(/\.\d{3}Z$/, "Z")
+    const canonical = [
+      String(snapshot.version ?? 1),
+      ts,
+      Number(snapshot.sri_value || 0).toFixed(4),
+      Number(snapshot.spread_score || 0).toFixed(4),
+      Number(snapshot.inflation_score || 0).toFixed(4),
+      Number(snapshot.rate_score || 0).toFixed(4),
+      Number(snapshot.liquidity_score || 0).toFixed(4),
+      String(snapshot.prev_hash || "GENESIS"),
+    ].join("|")
     
     setResults(prev => prev.map((r, i) => 
       i === 0 ? { ...r, status: "success", detail: canonical.slice(0, 50) + "..." } : r
@@ -129,15 +134,21 @@ export default function ScannerPage() {
 
     // Step 3: Verify signature
     let sigValid = false
+    let sigError = "No public key"
     if (hashMatch && PUBLIC_KEY) {
-      sigValid = verifySignature(snapshot.integrity_hash, snapshot.signature, PUBLIC_KEY)
+      try {
+        sigValid = verifySignature(snapshot.integrity_hash, snapshot.signature, PUBLIC_KEY)
+        sigError = sigValid ? "Signature valid" : "Signature mismatch"
+      } catch (e) {
+        sigError = e instanceof Error ? e.message : "Unknown error"
+      }
     }
     
     setResults(prev => prev.map((r, i) => 
       i === 2 ? { 
         ...r, 
         status: sigValid ? "success" : "error",
-        detail: sigValid ? "Signature valid" : "INVALID SIGNATURE"
+        detail: sigValid ? "Signature valid" : sigError
       } : r
     ))
 
@@ -244,7 +255,7 @@ export default function ScannerPage() {
               
               <div className="p-4 bg-[hsl(0,0%,3%)] rounded border border-[hsl(0,0%,10%)] mb-4">
                 <code className="text-[10px] font-mono text-[hsl(43,25%,55%)] break-all leading-relaxed">
-                  {`${snapshot.version}|${snapshot.calculated_at}|${snapshot.sri_value.toFixed(4)}|${snapshot.spread_score.toFixed(4)}|${snapshot.inflation_score.toFixed(4)}|${snapshot.rate_score.toFixed(4)}|${snapshot.liquidity_score.toFixed(4)}|${snapshot.prev_hash}`}
+                  {`${snapshot.version}|${(snapshot.calculated_at || "").replace(/\.\d{3}Z$/, "Z")}|${Number(snapshot.sri_value || 0).toFixed(4)}|${Number(snapshot.spread_score || 0).toFixed(4)}|${Number(snapshot.inflation_score || 0).toFixed(4)}|${Number(snapshot.rate_score || 0).toFixed(4)}|${Number(snapshot.liquidity_score || 0).toFixed(4)}|${snapshot.prev_hash || "GENESIS"}`}
                 </code>
               </div>
               
@@ -367,16 +378,16 @@ export default function ScannerPage() {
                       className={`
                         flex items-center justify-between p-4 rounded border
                         ${result.status === "pending" ? "bg-[hsl(0,0%,3%)] border-[hsl(0,0%,10%)]" : ""}
-                        ${result.status === "success" ? "bg-[hsl(142,76%,46%)]/5 border-[hsl(142,76%,46%)]/20" : ""}
+                        ${result.status === "success" ? "bg-[hsl(43,25%,55%)]/5 border-[hsl(43,25%,55%)]/20" : ""}
                         ${result.status === "error" ? "bg-[hsl(0,72%,51%)]/5 border-[hsl(0,72%,51%)]/20" : ""}
                       `}
                     >
                       <div className="flex items-center gap-3">
                         {result.status === "pending" && (
-                          <div className="w-5 h-5 rounded-full border-2 border-[hsl(0,0%,20%)] border-t-[hsl(45,90%,50%)] animate-spin" />
+                          <div className="w-5 h-5 rounded-full border-2 border-[hsl(0,0%,20%)] border-t-[hsl(43,25%,55%)] animate-spin" />
                         )}
                         {result.status === "success" && (
-                          <ShieldCheck className="w-5 h-5 text-[hsl(142,76%,46%)]" />
+                          <ShieldCheck className="w-5 h-5 text-[hsl(43,25%,55%)]" />
                         )}
                         {result.status === "error" && (
                           <ShieldX className="w-5 h-5 text-[hsl(0,72%,51%)]" />
@@ -387,15 +398,44 @@ export default function ScannerPage() {
                       </div>
                       {result.detail && (
                         <span className={`text-xs font-mono ${
-                          result.status === "success" ? "text-[hsl(142,76%,46%)]" : 
+                          result.status === "success" ? "text-[hsl(43,25%,55%)]" : 
                           result.status === "error" ? "text-[hsl(0,72%,51%)]" : 
                           "text-[hsl(0,0%,50%)]"
                         }`}>
-                          {result.detail}
+                          {result.status === "success" ? "VERIFIED" : result.detail}
                         </span>
                       )}
                     </div>
                   ))
+                )}
+                
+                {/* Final verdict */}
+                {results.length === 4 && results.every(r => r.status === "success") && (
+                  <div className="mt-6 p-6 bg-[hsl(43,25%,55%)]/10 border-2 border-[hsl(43,25%,55%)]/40 rounded-lg text-center">
+                    <div className="flex items-center justify-center gap-3 mb-2">
+                      <ShieldCheck className="w-8 h-8 text-[hsl(43,25%,55%)]" />
+                      <span className="text-2xl font-mono font-bold text-[hsl(43,25%,55%)]">
+                        VERIFIED
+                      </span>
+                    </div>
+                    <p className="text-xs font-mono text-[hsl(0,0%,50%)]">
+                      All cryptographic checks passed. Data integrity confirmed.
+                    </p>
+                  </div>
+                )}
+                
+                {results.length === 4 && results.some(r => r.status === "error") && (
+                  <div className="mt-6 p-6 bg-[hsl(0,72%,51%)]/10 border-2 border-[hsl(0,72%,51%)]/40 rounded-lg text-center">
+                    <div className="flex items-center justify-center gap-3 mb-2">
+                      <ShieldX className="w-8 h-8 text-[hsl(0,72%,51%)]" />
+                      <span className="text-2xl font-mono font-bold text-[hsl(0,72%,51%)]">
+                        VERIFICATION FAILED
+                      </span>
+                    </div>
+                    <p className="text-xs font-mono text-[hsl(0,0%,50%)]">
+                      One or more checks failed. Data integrity cannot be confirmed.
+                    </p>
+                  </div>
                 )}
               </div>
             </div>

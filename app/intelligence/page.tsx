@@ -12,7 +12,10 @@ import { DashboardPanel } from "@/components/DashboardPanel"
 import { IntegrityVerifier } from "@/components/IntegrityVerifier"
 
 // Public key from environment (exposed to client)
-const PUBLIC_KEY = process.env.NEXT_PUBLIC_BOBIKCS_PUBLIC_KEY_BASE64 || ""
+// Try multiple env var names for compatibility
+const PUBLIC_KEY = process.env.NEXT_PUBLIC_BOBIKCS_PUBLIC_KEY_BASE64 || 
+                   process.env.NEXT_PUBLIC_SIGNING_KEY ||
+                   process.env.NEXT_PUBLIC_CORE_PUBLIC_KEY || ""
 
 export default function IntelligencePage() {
   return (
