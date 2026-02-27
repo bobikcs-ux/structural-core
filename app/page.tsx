@@ -140,9 +140,11 @@ function getMockData(): IntegrityRecord[] {
 async function getIntegrityData(): Promise<IntegrityRecord[]> {
   try {
     const supabase = await createClient()
+    
+    // Query the regions table directly and transform to expected format
     const { data, error } = await supabase
-      .from("vw_structural_api_v1_secure")
-      .select("*")
+      .from("regions")
+      .select("id, region_id, region_name, index_value, status, quality, integrity_hash, trend_30d, trend_90d, updated_at, created_at")
       .order("created_at", { ascending: false })
 
     if (error) {
@@ -155,7 +157,24 @@ async function getIntegrityData(): Promise<IntegrityRecord[]> {
       return getMockData()
     }
 
-    return data as IntegrityRecord[]
+    // Transform the regions data to match IntegrityRecord format
+    const transformedData: IntegrityRecord[] = data.map((row) => ({
+      id: row.id,
+      payload: {
+        region_id: row.region_id,
+        region_name: row.region_name,
+        index: Number(row.index_value),
+        status: row.status as "healthy" | "stale" | "delayed" | "offline",
+        quality: Number(row.quality),
+        updated_at: row.updated_at,
+        trend_30d: row.trend_30d?.map(Number) || [],
+        trend_90d: row.trend_90d?.map(Number) || [],
+      },
+      integrity_hash: row.integrity_hash,
+      created_at: row.created_at,
+    }))
+
+    return transformedData
   } catch (error) {
     console.error("[v0] Failed to fetch data:", error)
     return getMockData()
