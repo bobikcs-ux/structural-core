@@ -411,3 +411,8 @@ export function generateKeyPair(): {
 // ============================================================================
 
 export { encodeBase64, decodeBase64 }
+
+/**
+ * Alias for decodeBase64 - used in spec examples
+ */
+export const base64ToUint8Array = decodeBase64

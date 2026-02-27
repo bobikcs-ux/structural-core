@@ -163,6 +163,30 @@ export type FredSeriesId =
   | "M2SL"       // M2 Money Stock
 
 // ============================================================================
+// SRI Snapshot Type (for client-side verification)
+// ============================================================================
+
+/**
+ * SRISnapshot - Client-facing snapshot format for verification
+ * This is the shape returned by /api/v1/pulse and /api/v1/snapshot
+ */
+export interface SRISnapshot {
+  id: string
+  version: number
+  sri_value: number
+  spread_score: number
+  inflation_score: number
+  rate_score: number
+  liquidity_score: number
+  prev_hash: string
+  fred_data_hash: string
+  integrity_hash: string
+  signature: string
+  public_key_id: string
+  calculated_at: string  // "2026-02-25T08:00:00Z" — no ms
+}
+
+// ============================================================================
 // API Response Types
 // ============================================================================
 
