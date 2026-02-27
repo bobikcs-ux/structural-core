@@ -85,7 +85,7 @@ function GenerateDataButton({ onSuccess }: { onSuccess: () => void }) {
 
 interface IntegrityVerifierProps {
   publicKeyBase64: string
-  children: (snap: SRISnapshot, state: SystemState) => React.ReactNode
+  children: (snap: SRISnapshot, state: SystemState, history: SRISnapshot[]) => React.ReactNode
 }
 
 // ============================================================================
@@ -96,7 +96,7 @@ export function IntegrityVerifier({ publicKeyBase64, children }: IntegrityVerifi
   // Safely handle potentially missing public key
   const safePublicKey = (publicKeyBase64 || "").replace(/\\n/g, "").replace(/\n/g, "").trim()
   
-  const { snapshot, frozenSnap, systemState, isConnecting, error, reconnect } = usePulse(safePublicKey)
+  const { snapshot, history, frozenSnap, systemState, isConnecting, error, reconnect } = usePulse(safePublicKey)
   const meta = STATE_META[systemState] || STATE_META.INITIALIZING
 
   // ── UNTRUSTED STATE: Kill switch overlay ──────────────────────
@@ -143,43 +143,8 @@ export function IntegrityVerifier({ publicKeyBase64, children }: IntegrityVerifi
     )
   }
 
-  // ── OFFLINE STATE ─────────────────────────────────────────────
-  if (systemState === "OFFLINE") {
-    return (
-      <div 
-        className="fixed inset-0 z-50 flex flex-col items-center justify-center"
-        style={{ backgroundColor: meta.bgColor }}
-      >
-        <div className="flex flex-col items-center gap-6 p-8">
-          <WifiOff className="h-12 w-12 text-gray-400" />
-          
-          <span className="text-2xl font-mono font-bold tracking-wider text-gray-400">
-            CONNECTION LOST
-          </span>
-          
-          <span className="text-sm font-mono text-gray-500 text-center max-w-md">
-            Unable to reach integrity pulse stream
-          </span>
-          
-          <button
-            onClick={reconnect}
-            className="mt-4 flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 
-                       border border-gray-600 rounded font-mono text-sm text-gray-300
-                       transition-colors"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Reconnect
-          </button>
-          
-          {snapshot && (
-            <div className="mt-6 text-xs font-mono text-gray-500">
-              <span>Last known SRI: {snapshot.sri_value.toFixed(4)}</span>
-            </div>
-          )}
-        </div>
-      </div>
-    )
-  }
+  // ── OFFLINE STATE: Show content with subtle indicator ─────────
+  // Instead of blocking overlay, just show the content with a reconnecting indicator
 
   // ── INITIALIZING STATE ────────────────────────────────────────
   if (!snapshot) {
@@ -213,11 +178,11 @@ export function IntegrityVerifier({ publicKeyBase64, children }: IntegrityVerifi
     )
   }
 
-  // ── LIVE / DEGRADED STATE: Render children ────────────────────
+  // ── LIVE / DEGRADED / OFFLINE STATE: Render children ──────────
   // Wrap children render in try-catch to prevent full component crash
   let renderedChildren: React.ReactNode = null
   try {
-    renderedChildren = children(snapshot, systemState)
+    renderedChildren = children(snapshot, systemState, history)
   } catch (renderError) {
     renderedChildren = (
       <div className="min-h-screen flex items-center justify-center bg-[hsl(0,0%,2%)]">
@@ -230,6 +195,38 @@ export function IntegrityVerifier({ publicKeyBase64, children }: IntegrityVerifi
       </div>
     )
   }
+
+  // Connection status indicator (quiet, in corner)
+  const ConnectionIndicator = () => {
+    if (systemState === "LIVE") {
+      return (
+        <div className="fixed bottom-4 right-4 z-50 flex items-center gap-2 px-3 py-1.5 bg-[#0F0F0F]/80 border border-[#1F1F1F] rounded-full backdrop-blur-sm">
+          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-[10px] font-mono text-gray-400">LIVE</span>
+        </div>
+      )
+    }
+    if (systemState === "OFFLINE") {
+      return (
+        <button
+          onClick={reconnect}
+          className="fixed bottom-4 right-4 z-50 flex items-center gap-2 px-3 py-1.5 bg-[#0F0F0F]/80 border border-red-500/30 rounded-full backdrop-blur-sm hover:border-red-500/50 transition-colors"
+        >
+          <div className="w-2 h-2 rounded-full bg-red-500" />
+          <span className="text-[10px] font-mono text-red-400">SYNCING...</span>
+        </button>
+      )
+    }
+    if (systemState === "DEGRADED") {
+      return (
+        <div className="fixed bottom-4 right-4 z-50 flex items-center gap-2 px-3 py-1.5 bg-[#0F0F0F]/80 border border-amber-500/30 rounded-full backdrop-blur-sm">
+          <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+          <span className="text-[10px] font-mono text-amber-400">DELAYED</span>
+        </div>
+      )
+    }
+    return null
+  }
   
   return (
     <div 
@@ -239,16 +236,7 @@ export function IntegrityVerifier({ publicKeyBase64, children }: IntegrityVerifi
       } as React.CSSProperties}
       className="min-h-screen"
     >
-      {/* State indicator banner for DEGRADED */}
-      {systemState === "DEGRADED" && (
-        <div className="fixed top-0 left-0 right-0 z-40 bg-amber-500/10 border-b border-amber-500/20 px-4 py-2">
-          <div className="flex items-center justify-center gap-2 text-amber-400 text-xs font-mono">
-            <AlertTriangle className="h-4 w-4" />
-            <span>DEGRADED: Data feed delayed — using last verified values</span>
-          </div>
-        </div>
-      )}
-      
+      <ConnectionIndicator />
       {renderedChildren}
     </div>
   )

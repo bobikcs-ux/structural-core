@@ -23,6 +23,8 @@ import type { SRISnapshot } from "@/lib/types"
 export interface UsePulseReturn {
   /** Current verified snapshot (null if none yet) */
   snapshot: SRISnapshot | null
+  /** Historical snapshots for charts (last 20) */
+  history: SRISnapshot[]
   /** Frozen snapshot when in UNTRUSTED state */
   frozenSnap: SRISnapshot | null
   /** Current system state */
@@ -66,6 +68,7 @@ export function usePulse(publicKeyBase64: string): UsePulseReturn {
   const [snapshot, setSnapshot] = useState<SRISnapshot | null>(() =>
     loadVerifiedSnapshot()
   )
+  const [history, setHistory] = useState<SRISnapshot[]>([])
   const [systemState, setSystemState] = useState<SystemState>("INITIALIZING")
   const [frozenSnap, setFrozenSnap] = useState<SRISnapshot | null>(null)
   const [isConnecting, setIsConnecting] = useState(true)
@@ -99,15 +102,13 @@ export function usePulse(publicKeyBase64: string): UsePulseReturn {
           saveVerifiedSnapshot(snap)
           setSnapshot(snap)
           setFrozenSnap(null)
+          // Add to history (prepend, keep last 20)
+          setHistory(prev => [snap, ...prev.filter(s => s.id !== snap.id)].slice(0, 20))
           
           const wasUntrusted = prevState.current === "UNTRUSTED"
           prevState.current = "LIVE"
           setSystemState("LIVE")
           clearSystemStateCookie() // Clear UNTRUSTED cookie on successful verification
-          
-          if (wasUntrusted) {
-            // Integrity restored - caller can detect via state change
-          }
         }
       })
     },
@@ -175,65 +176,63 @@ export function usePulse(publicKeyBase64: string): UsePulseReturn {
     connect()
   }, [connect])
 
-  // ── Initial hydration: fetch snapshot from DB ────────────────
+  // ── Initial hydration: fetch last 20 snapshots from DB ───────
   useEffect(() => {
     async function hydrateFromDB() {
-      console.log("[v0] Hydrating from DB...")
       try {
-        // Try snapshots list first
-        let latest: SRISnapshot | null = null
-        
-        const res = await fetch("/api/v1/snapshots?limit=1")
+        // Fetch 20 snapshots for history/charts
+        const res = await fetch("/api/v1/snapshots?limit=20")
         if (res.ok) {
           const data = await res.json()
           if (data.snapshots && data.snapshots.length > 0) {
-            latest = data.snapshots[0] as SRISnapshot
-            console.log("[v0] Got snapshot from /api/v1/snapshots:", latest?.id)
+            const allSnapshots = data.snapshots as SRISnapshot[]
+            const latest = allSnapshots[0]
+            
+            // Set history for charts
+            setHistory(allSnapshots)
+            
+            if (latest && latest.integrity_hash) {
+              // If we have a public key, verify; otherwise trust the server
+              if (publicKeyBase64) {
+                const result = await verifySnapshot(latest, publicKeyBase64)
+                if (result.ok) {
+                  saveVerifiedSnapshot(latest)
+                  setSnapshot(latest)
+                  setSystemState("LIVE")
+                  setIsConnecting(false)
+                } else {
+                  // Still show the data but in DEGRADED state
+                  setSnapshot(latest)
+                  setSystemState("DEGRADED")
+                  setIsConnecting(false)
+                }
+              } else {
+                // No public key - trust server-signed data
+                saveVerifiedSnapshot(latest)
+                setSnapshot(latest)
+                setSystemState("LIVE")
+                setIsConnecting(false)
+              }
+            }
+            return
           }
         }
         
         // If no snapshots, try direct API (which can generate)
-        if (!latest) {
-          const directRes = await fetch("/api/v1/snapshot?mode=read")
-          if (directRes.ok) {
-            const directData = await directRes.json()
-            if (directData.snapshot) {
-              latest = directData.snapshot
-              console.log("[v0] Got snapshot from /api/v1/snapshot:", latest?.id)
-            }
-          }
-        }
-        
-        if (latest && latest.integrity_hash) {
-          // If we have a public key, verify; otherwise trust the server
-          if (publicKeyBase64) {
-            const result = await verifySnapshot(latest, publicKeyBase64)
-            console.log("[v0] Verification result:", result)
-            if (result.ok) {
-              saveVerifiedSnapshot(latest)
-              setSnapshot(latest)
-              setSystemState("LIVE")
-              setIsConnecting(false)
-            } else {
-              console.error("[v0] Verification failed:", result)
-              // Still show the data but in DEGRADED state
-              setSnapshot(latest)
-              setSystemState("DEGRADED")
-              setIsConnecting(false)
-            }
-          } else {
-            // No public key - trust server-signed data
-            console.log("[v0] No public key, trusting server data")
+        const directRes = await fetch("/api/v1/snapshot?mode=read")
+        if (directRes.ok) {
+          const directData = await directRes.json()
+          if (directData.snapshot) {
+            const latest = directData.snapshot
             saveVerifiedSnapshot(latest)
             setSnapshot(latest)
+            setHistory([latest])
             setSystemState("LIVE")
             setIsConnecting(false)
           }
-        } else {
-          console.log("[v0] No snapshot available from any source")
         }
-      } catch (err) {
-        console.error("[v0] Hydration failed:", err)
+      } catch {
+        // Hydration failed - will rely on SSE
       }
     }
     
@@ -266,6 +265,7 @@ export function usePulse(publicKeyBase64: string): UsePulseReturn {
 
   return {
     snapshot,
+    history,
     frozenSnap,
     systemState,
     isConnecting,

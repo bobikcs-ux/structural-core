@@ -20,11 +20,11 @@ const PUBLIC_KEY = process.env.NEXT_PUBLIC_BOBIKCS_PUBLIC_KEY_BASE64 ||
 export default function IntelligencePage() {
   return (
     <IntegrityVerifier publicKeyBase64={PUBLIC_KEY}>
-      {(snapshot, systemState) => (
+      {(snapshot, systemState, history) => (
         <DashboardPanel
           snapshot={snapshot}
           systemState={systemState}
-          history={[]}
+          history={history}
         />
       )}
     </IntegrityVerifier>
