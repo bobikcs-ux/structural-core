@@ -41,6 +41,22 @@ export interface UsePulseReturn {
 
 const HEARTBEAT_TIMEOUT_MS = 2000  // 2s without heartbeat = DEGRADED
 const RECONNECT_DELAY_MS = 5000   // 5s delay before reconnect
+const SYSTEM_STATE_COOKIE = "bobikcs_system_state"
+
+// ============================================================================
+// Cookie Helper (for middleware kill-switch)
+// ============================================================================
+
+function setSystemStateCookie(state: SystemState): void {
+  if (typeof document === "undefined") return
+  // Set cookie with 1 hour expiry, accessible to middleware
+  document.cookie = `${SYSTEM_STATE_COOKIE}=${state}; path=/; max-age=3600; SameSite=Strict`
+}
+
+function clearSystemStateCookie(): void {
+  if (typeof document === "undefined") return
+  document.cookie = `${SYSTEM_STATE_COOKIE}=; path=/; max-age=0`
+}
 
 // ============================================================================
 // Main Hook
@@ -76,6 +92,7 @@ export function usePulse(publicKeyBase64: string): UsePulseReturn {
           setFrozenSnap(frozen)
           prevState.current = systemState
           setSystemState("UNTRUSTED")
+          setSystemStateCookie("UNTRUSTED") // Set cookie for middleware kill-switch
           setError(`Verification failed: ${result.reason}${result.detail ? ` - ${result.detail}` : ""}`)
         } else {
           // Verification succeeded
@@ -86,6 +103,7 @@ export function usePulse(publicKeyBase64: string): UsePulseReturn {
           const wasUntrusted = prevState.current === "UNTRUSTED"
           prevState.current = "LIVE"
           setSystemState("LIVE")
+          clearSystemStateCookie() // Clear UNTRUSTED cookie on successful verification
           
           if (wasUntrusted) {
             // Integrity restored - caller can detect via state change
