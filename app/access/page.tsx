@@ -74,7 +74,7 @@ export default function AccessPage() {
           <div className="w-16 h-16 rounded-full bg-[hsl(142,76%,46%)]/10 flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="w-8 h-8 text-[hsl(142,76%,46%)]" />
           </div>
-          <h1 className="text-2xl font-mono font-bold text-[hsl(45,20%,95%)] mb-4">
+          <h1 className="text-2xl font-mono font-bold text-[hsl(0,0%,90%)] mb-4">
             REQUEST SUBMITTED
           </h1>
           <p className="text-sm font-mono text-[hsl(0,0%,50%)] mb-8">
@@ -85,13 +85,13 @@ export default function AccessPage() {
             <div className="text-[10px] font-mono text-[hsl(0,0%,40%)] uppercase mb-2">
               Reference ID
             </div>
-            <code className="text-sm font-mono text-[hsl(45,90%,50%)]">
+            <code className="text-sm font-mono text-[hsl(43,25%,55%)]">
               CLR-{Date.now().toString(36).toUpperCase()}
             </code>
           </div>
           <a
             href="/"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-[hsl(45,90%,50%)] text-[hsl(0,0%,2%)] font-mono text-sm font-medium rounded hover:bg-[hsl(45,90%,55%)] transition-colors"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-[hsl(43,25%,55%)] text-[hsl(0,0%,2%)] font-mono text-sm font-medium rounded hover:bg-[hsl(43,25%,45%)] transition-colors"
           >
             RETURN TO HOME
             <ArrowRight className="w-4 h-4" />
@@ -107,12 +107,12 @@ export default function AccessPage() {
         {/* Header */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-[hsl(0,0%,4%)] border border-[hsl(0,0%,12%)] rounded-full mb-6">
-            <KeyRound className="w-4 h-4 text-[hsl(45,90%,50%)]" />
+            <KeyRound className="w-4 h-4 text-[hsl(43,25%,55%)]" />
             <span className="text-[10px] font-mono tracking-wider text-[hsl(0,0%,60%)]">
               RESTRICTED ACCESS
             </span>
           </div>
-          <h1 className="text-3xl font-mono font-bold text-[hsl(45,20%,95%)] mb-4">
+          <h1 className="text-3xl font-mono font-bold text-[hsl(0,0%,90%)] mb-4">
             INSTITUTIONAL CLEARANCE
           </h1>
           <p className="text-sm font-mono text-[hsl(0,0%,50%)]">
@@ -131,8 +131,8 @@ export default function AccessPage() {
               key={idx}
               className="p-4 bg-[hsl(0,0%,4%)] border border-[hsl(0,0%,12%)] rounded-lg"
             >
-              <benefit.icon className="w-5 h-5 text-[hsl(45,90%,50%)] mb-3" />
-              <div className="text-sm font-mono text-[hsl(45,20%,95%)] mb-1">
+              <benefit.icon className="w-5 h-5 text-[hsl(43,25%,55%)] mb-3" />
+              <div className="text-sm font-mono text-[hsl(0,0%,90%)] mb-1">
                 {benefit.title}
               </div>
               <div className="text-[10px] font-mono text-[hsl(0,0%,50%)]">
@@ -161,7 +161,7 @@ export default function AccessPage() {
                   required
                   value={formData.name}
                   onChange={(e) => updateField("name", e.target.value)}
-                  className="w-full px-4 py-3 bg-[hsl(0,0%,3%)] border border-[hsl(0,0%,10%)] rounded text-sm font-mono text-[hsl(45,20%,95%)] placeholder:text-[hsl(0,0%,30%)] focus:outline-none focus:border-[hsl(45,90%,50%)]/30"
+                  className="w-full px-4 py-3 bg-[hsl(0,0%,3%)] border border-[hsl(0,0%,10%)] rounded text-sm font-mono text-[hsl(0,0%,90%)] placeholder:text-[hsl(0,0%,30%)] focus:outline-none focus:border-[hsl(43,25%,55%)]/30"
                   placeholder="John Smith"
                 />
               </div>
@@ -177,7 +177,7 @@ export default function AccessPage() {
                   required
                   value={formData.email}
                   onChange={(e) => updateField("email", e.target.value)}
-                  className="w-full px-4 py-3 bg-[hsl(0,0%,3%)] border border-[hsl(0,0%,10%)] rounded text-sm font-mono text-[hsl(45,20%,95%)] placeholder:text-[hsl(0,0%,30%)] focus:outline-none focus:border-[hsl(45,90%,50%)]/30"
+                  className="w-full px-4 py-3 bg-[hsl(0,0%,3%)] border border-[hsl(0,0%,10%)] rounded text-sm font-mono text-[hsl(0,0%,90%)] placeholder:text-[hsl(0,0%,30%)] focus:outline-none focus:border-[hsl(43,25%,55%)]/30"
                   placeholder="john@institution.com"
                 />
               </div>
@@ -201,7 +201,7 @@ export default function AccessPage() {
                   required
                   value={formData.institution}
                   onChange={(e) => updateField("institution", e.target.value)}
-                  className="w-full px-4 py-3 bg-[hsl(0,0%,3%)] border border-[hsl(0,0%,10%)] rounded text-sm font-mono text-[hsl(45,20%,95%)] placeholder:text-[hsl(0,0%,30%)] focus:outline-none focus:border-[hsl(45,90%,50%)]/30"
+                  className="w-full px-4 py-3 bg-[hsl(0,0%,3%)] border border-[hsl(0,0%,10%)] rounded text-sm font-mono text-[hsl(0,0%,90%)] placeholder:text-[hsl(0,0%,30%)] focus:outline-none focus:border-[hsl(43,25%,55%)]/30"
                   placeholder="Acme Capital Management"
                 />
               </div>
@@ -216,7 +216,7 @@ export default function AccessPage() {
                     required
                     value={formData.institutionType}
                     onChange={(e) => updateField("institutionType", e.target.value)}
-                    className="w-full px-4 py-3 bg-[hsl(0,0%,3%)] border border-[hsl(0,0%,10%)] rounded text-sm font-mono text-[hsl(45,20%,95%)] focus:outline-none focus:border-[hsl(45,90%,50%)]/30"
+                    className="w-full px-4 py-3 bg-[hsl(0,0%,3%)] border border-[hsl(0,0%,10%)] rounded text-sm font-mono text-[hsl(0,0%,90%)] focus:outline-none focus:border-[hsl(43,25%,55%)]/30"
                   >
                     <option value="">Select type...</option>
                     <option value="HEDGE_FUND">Hedge Fund</option>
@@ -237,7 +237,7 @@ export default function AccessPage() {
                     required
                     value={formData.role}
                     onChange={(e) => updateField("role", e.target.value)}
-                    className="w-full px-4 py-3 bg-[hsl(0,0%,3%)] border border-[hsl(0,0%,10%)] rounded text-sm font-mono text-[hsl(45,20%,95%)] placeholder:text-[hsl(0,0%,30%)] focus:outline-none focus:border-[hsl(45,90%,50%)]/30"
+                    className="w-full px-4 py-3 bg-[hsl(0,0%,3%)] border border-[hsl(0,0%,10%)] rounded text-sm font-mono text-[hsl(0,0%,90%)] placeholder:text-[hsl(0,0%,30%)] focus:outline-none focus:border-[hsl(43,25%,55%)]/30"
                     placeholder="Portfolio Manager"
                   />
                 </div>
@@ -252,7 +252,7 @@ export default function AccessPage() {
                   <select
                     value={formData.aum}
                     onChange={(e) => updateField("aum", e.target.value)}
-                    className="w-full px-4 py-3 bg-[hsl(0,0%,3%)] border border-[hsl(0,0%,10%)] rounded text-sm font-mono text-[hsl(45,20%,95%)] focus:outline-none focus:border-[hsl(45,90%,50%)]/30"
+                    className="w-full px-4 py-3 bg-[hsl(0,0%,3%)] border border-[hsl(0,0%,10%)] rounded text-sm font-mono text-[hsl(0,0%,90%)] focus:outline-none focus:border-[hsl(43,25%,55%)]/30"
                   >
                     <option value="">Select range...</option>
                     <option value="<100M">Under $100M</option>
@@ -272,7 +272,7 @@ export default function AccessPage() {
                   <select
                     value={formData.region}
                     onChange={(e) => updateField("region", e.target.value)}
-                    className="w-full px-4 py-3 bg-[hsl(0,0%,3%)] border border-[hsl(0,0%,10%)] rounded text-sm font-mono text-[hsl(45,20%,95%)] focus:outline-none focus:border-[hsl(45,90%,50%)]/30"
+                    className="w-full px-4 py-3 bg-[hsl(0,0%,3%)] border border-[hsl(0,0%,10%)] rounded text-sm font-mono text-[hsl(0,0%,90%)] focus:outline-none focus:border-[hsl(43,25%,55%)]/30"
                   >
                     <option value="">Select region...</option>
                     <option value="NA">North America</option>
@@ -293,7 +293,7 @@ export default function AccessPage() {
                   rows={4}
                   value={formData.useCase}
                   onChange={(e) => updateField("useCase", e.target.value)}
-                  className="w-full px-4 py-3 bg-[hsl(0,0%,3%)] border border-[hsl(0,0%,10%)] rounded text-sm font-mono text-[hsl(45,20%,95%)] placeholder:text-[hsl(0,0%,30%)] focus:outline-none focus:border-[hsl(45,90%,50%)]/30 resize-none"
+                  className="w-full px-4 py-3 bg-[hsl(0,0%,3%)] border border-[hsl(0,0%,10%)] rounded text-sm font-mono text-[hsl(0,0%,90%)] placeholder:text-[hsl(0,0%,30%)] focus:outline-none focus:border-[hsl(43,25%,55%)]/30 resize-none"
                   placeholder="Describe how you plan to use Structural Core data..."
                 />
               </div>
@@ -308,7 +308,7 @@ export default function AccessPage() {
             <button
               type="submit"
               disabled={loading}
-              className="flex items-center gap-2 px-6 py-3 bg-[hsl(45,90%,50%)] text-[hsl(0,0%,2%)] font-mono text-sm font-medium rounded hover:bg-[hsl(45,90%,55%)] transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-6 py-3 bg-[hsl(43,25%,55%)] text-[hsl(0,0%,2%)] font-mono text-sm font-medium rounded hover:bg-[hsl(43,25%,45%)] transition-colors disabled:opacity-50"
             >
               {loading ? (
                 <>

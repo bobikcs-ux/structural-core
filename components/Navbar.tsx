@@ -51,10 +51,10 @@ export function Navbar() {
             href="/" 
             className="flex items-center gap-3 group"
           >
-            <div className="w-8 h-8 rounded bg-[hsl(45,90%,50%)] flex items-center justify-center">
+            <div className="w-8 h-8 rounded bg-[hsl(43,25%,55%)] flex items-center justify-center">
               <span className="text-[hsl(0,0%,2%)] font-mono font-bold text-sm">SC</span>
             </div>
-            <span className="hidden sm:block text-[11px] font-mono tracking-[0.2em] text-[hsl(0,0%,60%)] group-hover:text-[hsl(45,90%,50%)] transition-colors">
+            <span className="hidden sm:block text-[11px] font-mono tracking-[0.2em] text-[hsl(0,0%,60%)] group-hover:text-[hsl(43,25%,55%)] transition-colors">
               STRUCTURAL CORE
             </span>
           </Link>
@@ -73,8 +73,8 @@ export function Navbar() {
                     flex items-center gap-2 px-3 py-2 rounded transition-all duration-200
                     text-[10px] font-mono tracking-wider
                     ${isActive 
-                      ? "bg-[hsl(45,90%,50%)]/10 text-[hsl(45,90%,50%)] border border-[hsl(45,90%,50%)]/20" 
-                      : "text-[hsl(0,0%,50%)] hover:text-[hsl(45,20%,95%)] hover:bg-[hsl(0,0%,8%)]"
+                      ? "bg-[hsl(43,25%,55%)]/10 text-[hsl(43,25%,55%)] border border-[hsl(43,25%,55%)]/20" 
+                      : "text-[hsl(0,0%,50%)] hover:text-[hsl(0,0%,90%)] hover:bg-[hsl(0,0%,8%)]"
                     }
                   `}
                 >
@@ -98,7 +98,7 @@ export function Navbar() {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 text-[hsl(0,0%,50%)] hover:text-[hsl(45,20%,95%)] transition-colors"
+            className="lg:hidden p-2 text-[hsl(0,0%,50%)] hover:text-[hsl(0,0%,90%)] transition-colors"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -121,8 +121,8 @@ export function Navbar() {
                       flex items-center gap-3 px-4 py-3 rounded transition-all duration-200
                       text-[11px] font-mono tracking-wider
                       ${isActive 
-                        ? "bg-[hsl(45,90%,50%)]/10 text-[hsl(45,90%,50%)]" 
-                        : "text-[hsl(0,0%,50%)] hover:text-[hsl(45,20%,95%)] hover:bg-[hsl(0,0%,8%)]"
+                        ? "bg-[hsl(43,25%,55%)]/10 text-[hsl(43,25%,55%)]" 
+                        : "text-[hsl(0,0%,50%)] hover:text-[hsl(0,0%,90%)] hover:bg-[hsl(0,0%,8%)]"
                       }
                     `}
                   >

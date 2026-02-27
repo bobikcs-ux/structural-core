@@ -75,6 +75,46 @@ export default function ConsolePage() {
   const [filter, setFilter] = useState<string>("ALL")
   const [autoRefresh, setAutoRefresh] = useState(true)
   const [consensusPercent, setConsensusPercent] = useState(98.7)
+  const [triggering, setTriggering] = useState(false)
+  const [triggerResult, setTriggerResult] = useState<{ ok: boolean; message: string } | null>(null)
+
+  // Manual trigger snapshot update
+  const triggerSnapshot = async () => {
+    setTriggering(true)
+    setTriggerResult(null)
+    
+    try {
+      const res = await fetch("/api/v1/snapshot", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-secret": process.env.NEXT_PUBLIC_ADMIN_SECRET || "",
+        },
+      })
+      
+      if (res.ok) {
+        const data = await res.json()
+        setTriggerResult({ ok: true, message: `SRI=${data.sri?.toFixed(4)} @ ${data.timestamp}` })
+        
+        // Add log entry
+        const newLog: LogEntry = {
+          id: Date.now().toString(),
+          timestamp: new Date().toISOString(),
+          level: "INFO",
+          source: "ADMIN",
+          message: `Manual snapshot triggered: SRI=${data.sri?.toFixed(4)}`,
+        }
+        setLogs((prev) => [newLog, ...prev.slice(0, 49)])
+      } else {
+        const text = await res.text()
+        setTriggerResult({ ok: false, message: text || "Failed to trigger" })
+      }
+    } catch (err) {
+      setTriggerResult({ ok: false, message: err instanceof Error ? err.message : "Network error" })
+    } finally {
+      setTriggering(false)
+    }
+  }
 
   // Simulate log updates
   useEffect(() => {
@@ -112,7 +152,7 @@ export default function ConsolePage() {
   const getLevelColor = (level: string) => {
     switch (level) {
       case "INFO": return "text-[hsl(200,80%,50%)]"
-      case "WARN": return "text-[hsl(45,90%,50%)]"
+      case "WARN": return "text-[hsl(43,25%,55%)]"
       case "ERROR": return "text-[hsl(0,72%,51%)]"
       case "DEBUG": return "text-[hsl(0,0%,50%)]"
       default: return "text-[hsl(0,0%,50%)]"
@@ -122,7 +162,7 @@ export default function ConsolePage() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "healthy": return <CheckCircle className="w-4 h-4 text-[hsl(142,76%,46%)]" />
-      case "degraded": return <AlertTriangle className="w-4 h-4 text-[hsl(45,90%,50%)]" />
+      case "degraded": return <AlertTriangle className="w-4 h-4 text-[hsl(43,25%,55%)]" />
       case "offline": return <XCircle className="w-4 h-4 text-[hsl(0,72%,51%)]" />
       default: return null
     }
@@ -134,17 +174,58 @@ export default function ConsolePage() {
         {/* Header */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-[hsl(0,0%,4%)] border border-[hsl(0,0%,12%)] rounded-full mb-6">
-            <Terminal className="w-4 h-4 text-[hsl(45,90%,50%)]" />
+            <Terminal className="w-4 h-4 text-[hsl(43,25%,55%)]" />
             <span className="text-[10px] font-mono tracking-wider text-[hsl(0,0%,60%)]">
               ADMIN CONSOLE
             </span>
           </div>
-          <h1 className="text-3xl font-mono font-bold text-[hsl(45,20%,95%)] mb-4">
+          <h1 className="text-3xl font-mono font-bold text-[hsl(0,0%,90%)] mb-4">
             SYSTEM CONSOLE
           </h1>
           <p className="text-sm font-mono text-[hsl(0,0%,50%)]">
             Real-time system logs, health metrics, and consensus monitoring
           </p>
+        </div>
+
+        {/* Trigger Update Button */}
+        <div className="mb-8 p-4 bg-[hsl(0,0%,4%)] border border-[hsl(0,0%,12%)] rounded-lg">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-sm font-mono text-[hsl(0,0%,90%)] mb-1">Manual Snapshot Trigger</h2>
+              <p className="text-[10px] font-mono text-[hsl(0,0%,50%)]">
+                Fetch fresh FRED data, compute SRI, sign with Ed25519, and persist to database
+              </p>
+            </div>
+            <button
+              onClick={triggerSnapshot}
+              disabled={triggering}
+              className="flex items-center gap-2 px-6 py-3 bg-[hsl(43,25%,55%)] text-[hsl(0,0%,2%)] font-mono text-sm font-semibold rounded hover:bg-[hsl(43,25%,45%)] transition-colors disabled:opacity-50"
+            >
+              {triggering ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <Activity className="w-4 h-4" />
+              )}
+              {triggering ? "PROCESSING..." : "TRIGGER UPDATE"}
+            </button>
+          </div>
+          
+          {triggerResult && (
+            <div className={`mt-4 p-3 rounded border ${
+              triggerResult.ok 
+                ? "bg-[hsl(142,50%,40%)]/10 border-[hsl(142,50%,40%)]/20 text-[hsl(142,50%,50%)]"
+                : "bg-[hsl(0,60%,45%)]/10 border-[hsl(0,60%,45%)]/20 text-[hsl(0,60%,55%)]"
+            }`}>
+              <div className="flex items-center gap-2">
+                {triggerResult.ok ? (
+                  <CheckCircle className="w-4 h-4" />
+                ) : (
+                  <XCircle className="w-4 h-4" />
+                )}
+                <span className="text-xs font-mono">{triggerResult.message}</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Top Stats */}
@@ -153,7 +234,7 @@ export default function ConsolePage() {
           <div className="col-span-2 bg-[hsl(0,0%,4%)] border border-[hsl(0,0%,12%)] rounded-lg p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <Server className="w-4 h-4 text-[hsl(45,90%,50%)]" />
+                <Server className="w-4 h-4 text-[hsl(43,25%,55%)]" />
                 <span className="text-[10px] font-mono text-[hsl(0,0%,50%)] uppercase tracking-wider">
                   Verification Consensus
                 </span>
@@ -161,7 +242,7 @@ export default function ConsolePage() {
               <span className="text-[9px] font-mono text-[hsl(142,76%,46%)]">OPERATIONAL</span>
             </div>
             <div className="flex items-baseline gap-2 mb-4">
-              <span className="text-4xl font-mono font-bold text-[hsl(45,90%,50%)]">
+              <span className="text-4xl font-mono font-bold text-[hsl(43,25%,55%)]">
                 {consensusPercent.toFixed(1)}%
               </span>
               <span className="text-xs font-mono text-[hsl(0,0%,40%)]">
@@ -179,14 +260,14 @@ export default function ConsolePage() {
           {/* Uptime */}
           <div className="bg-[hsl(0,0%,4%)] border border-[hsl(0,0%,12%)] rounded-lg p-6">
             <div className="text-[10px] font-mono text-[hsl(0,0%,40%)] uppercase mb-2">Uptime</div>
-            <div className="text-2xl font-mono font-bold text-[hsl(45,20%,95%)]">99.97%</div>
+            <div className="text-2xl font-mono font-bold text-[hsl(0,0%,90%)]">99.97%</div>
             <div className="text-[10px] font-mono text-[hsl(0,0%,40%)] mt-1">30-day average</div>
           </div>
 
           {/* Snapshots */}
           <div className="bg-[hsl(0,0%,4%)] border border-[hsl(0,0%,12%)] rounded-lg p-6">
             <div className="text-[10px] font-mono text-[hsl(0,0%,40%)] uppercase mb-2">Snapshots</div>
-            <div className="text-2xl font-mono font-bold text-[hsl(45,20%,95%)]">2,847</div>
+            <div className="text-2xl font-mono font-bold text-[hsl(0,0%,90%)]">2,847</div>
             <div className="text-[10px] font-mono text-[hsl(0,0%,40%)] mt-1">Total signed</div>
           </div>
         </div>
@@ -205,13 +286,13 @@ export default function ConsolePage() {
                   className="bg-[hsl(0,0%,4%)] border border-[hsl(0,0%,12%)] rounded-lg p-4"
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <Icon className="w-4 h-4 text-[hsl(45,90%,50%)]" />
+                    <Icon className="w-4 h-4 text-[hsl(43,25%,55%)]" />
                     {getStatusIcon(metric.status)}
                   </div>
                   <div className="text-[10px] font-mono text-[hsl(0,0%,50%)] uppercase mb-1">
                     {metric.name}
                   </div>
-                  <div className="text-sm font-mono text-[hsl(45,20%,95%)]">
+                  <div className="text-sm font-mono text-[hsl(0,0%,90%)]">
                     {metric.value}
                   </div>
                 </div>
@@ -225,7 +306,7 @@ export default function ConsolePage() {
           {/* Log Header */}
           <div className="px-4 py-3 border-b border-[hsl(0,0%,12%)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <Terminal className="w-4 h-4 text-[hsl(45,90%,50%)]" />
+              <Terminal className="w-4 h-4 text-[hsl(43,25%,55%)]" />
               <span className="text-[11px] font-mono uppercase tracking-wider text-[hsl(0,0%,50%)]">
                 System Logs
               </span>
@@ -241,7 +322,7 @@ export default function ConsolePage() {
                     className={`
                       px-2 py-1 text-[9px] font-mono rounded transition-all
                       ${filter === level
-                        ? "bg-[hsl(45,90%,50%)]/10 text-[hsl(45,90%,50%)]"
+                        ? "bg-[hsl(45,90%,50%)]/10 text-[hsl(43,25%,55%)]"
                         : "text-[hsl(0,0%,40%)] hover:text-[hsl(0,0%,60%)]"
                       }
                     `}
@@ -287,7 +368,7 @@ export default function ConsolePage() {
                   <span className={`w-12 flex-shrink-0 ${getLevelColor(log.level)}`}>
                     [{log.level}]
                   </span>
-                  <span className="text-[hsl(45,90%,50%)] w-24 flex-shrink-0">
+                  <span className="text-[hsl(43,25%,55%)] w-24 flex-shrink-0">
                     {log.source}
                   </span>
                   <span className="text-[hsl(0,0%,60%)] flex-1">

@@ -128,7 +128,7 @@ export default function ReportsPage() {
   const getCategoryColor = (category: string) => {
     switch (category) {
       case "DAILY": return "text-[hsl(200,80%,50%)]"
-      case "WEEKLY": return "text-[hsl(45,90%,50%)]"
+      case "WEEKLY": return "text-[hsl(43,25%,55%)]"
       case "MONTHLY": return "text-[hsl(280,80%,60%)]"
       case "SPECIAL": return "text-[hsl(340,80%,60%)]"
       default: return "text-[hsl(0,0%,50%)]"
@@ -141,12 +141,12 @@ export default function ReportsPage() {
         {/* Header */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-[hsl(0,0%,4%)] border border-[hsl(0,0%,12%)] rounded-full mb-6">
-            <FileText className="w-4 h-4 text-[hsl(45,90%,50%)]" />
+            <FileText className="w-4 h-4 text-[hsl(43,25%,55%)]" />
             <span className="text-[10px] font-mono tracking-wider text-[hsl(0,0%,60%)]">
               DOCUMENT ARCHIVE
             </span>
           </div>
-          <h1 className="text-3xl font-mono font-bold text-[hsl(45,20%,95%)] mb-4">
+          <h1 className="text-3xl font-mono font-bold text-[hsl(0,0%,90%)] mb-4">
             INSTITUTIONAL REPORTS
           </h1>
           <p className="text-sm font-mono text-[hsl(0,0%,50%)]">
@@ -164,7 +164,7 @@ export default function ReportsPage() {
               placeholder="Search reports..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-[hsl(0,0%,4%)] border border-[hsl(0,0%,12%)] rounded text-sm font-mono text-[hsl(45,20%,95%)] placeholder:text-[hsl(0,0%,30%)] focus:outline-none focus:border-[hsl(45,90%,50%)]/30"
+              className="w-full pl-10 pr-4 py-3 bg-[hsl(0,0%,4%)] border border-[hsl(0,0%,12%)] rounded text-sm font-mono text-[hsl(0,0%,90%)] placeholder:text-[hsl(0,0%,30%)] focus:outline-none focus:border-[hsl(43,25%,55%)]/30"
             />
           </div>
 
@@ -179,7 +179,7 @@ export default function ReportsPage() {
                   className={`
                     px-3 py-2 text-[10px] font-mono rounded border transition-all
                     ${filter === cat
-                      ? "bg-[hsl(45,90%,50%)]/10 border-[hsl(45,90%,50%)]/30 text-[hsl(45,90%,50%)]"
+                      ? "bg-[hsl(43,25%,55%)]/10 border-[hsl(43,25%,55%)]/30 text-[hsl(43,25%,55%)]"
                       : "bg-[hsl(0,0%,4%)] border-[hsl(0,0%,12%)] text-[hsl(0,0%,50%)] hover:border-[hsl(0,0%,20%)]"
                     }
                   `}
@@ -202,13 +202,13 @@ export default function ReportsPage() {
             filteredReports.map((report) => (
               <div
                 key={report.id}
-                className="group bg-[hsl(0,0%,4%)] border border-[hsl(0,0%,12%)] rounded-lg p-5 hover:border-[hsl(45,90%,50%)]/20 transition-all"
+                className="group bg-[hsl(0,0%,4%)] border border-[hsl(0,0%,12%)] rounded-lg p-5 hover:border-[hsl(43,25%,55%)]/20 transition-all"
               >
                 <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                   {/* Icon & Title */}
                   <div className="flex items-start gap-4 flex-1">
                     <div className="w-10 h-10 rounded bg-[hsl(0,0%,8%)] flex items-center justify-center flex-shrink-0">
-                      <FileText className="w-5 h-5 text-[hsl(45,90%,50%)]" />
+                      <FileText className="w-5 h-5 text-[hsl(43,25%,55%)]" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
@@ -221,13 +221,13 @@ export default function ReportsPage() {
                             VERIFIED
                           </span>
                         ) : (
-                          <span className="flex items-center gap-1 text-[9px] font-mono text-[hsl(45,90%,50%)]">
+                          <span className="flex items-center gap-1 text-[9px] font-mono text-[hsl(43,25%,55%)]">
                             <Shield className="w-3 h-3" />
                             PENDING
                           </span>
                         )}
                       </div>
-                      <h3 className="text-sm font-mono text-[hsl(45,20%,95%)] mb-2 truncate">
+                      <h3 className="text-sm font-mono text-[hsl(0,0%,90%)] mb-2 truncate">
                         {report.title}
                       </h3>
                       <div className="flex flex-wrap items-center gap-4 text-[10px] font-mono text-[hsl(0,0%,40%)]">
@@ -243,18 +243,18 @@ export default function ReportsPage() {
                   {/* Hash & Actions */}
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 lg:gap-4">
                     <div className="flex items-center gap-2 px-3 py-2 bg-[hsl(0,0%,3%)] rounded border border-[hsl(0,0%,10%)]">
-                      <Hash className="w-3 h-3 text-[hsl(45,90%,50%)]" />
+                      <Hash className="w-3 h-3 text-[hsl(43,25%,55%)]" />
                       <code className="text-[10px] font-mono text-[hsl(0,0%,50%)]">
                         {report.hash.slice(0, 24)}...
                       </code>
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      <button className="flex items-center gap-2 px-3 py-2 bg-[hsl(0,0%,8%)] border border-[hsl(0,0%,12%)] text-[hsl(0,0%,60%)] text-[10px] font-mono rounded hover:bg-[hsl(0,0%,10%)] hover:text-[hsl(45,20%,95%)] transition-colors">
+                      <button className="flex items-center gap-2 px-3 py-2 bg-[hsl(0,0%,8%)] border border-[hsl(0,0%,12%)] text-[hsl(0,0%,60%)] text-[10px] font-mono rounded hover:bg-[hsl(0,0%,10%)] hover:text-[hsl(0,0%,90%)] transition-colors">
                         <Download className="w-3 h-3" />
                         DOWNLOAD
                       </button>
-                      <button className="p-2 bg-[hsl(0,0%,8%)] border border-[hsl(0,0%,12%)] text-[hsl(0,0%,60%)] rounded hover:bg-[hsl(0,0%,10%)] hover:text-[hsl(45,20%,95%)] transition-colors">
+                      <button className="p-2 bg-[hsl(0,0%,8%)] border border-[hsl(0,0%,12%)] text-[hsl(0,0%,60%)] rounded hover:bg-[hsl(0,0%,10%)] hover:text-[hsl(0,0%,90%)] transition-colors">
                         <ExternalLink className="w-3 h-3" />
                       </button>
                     </div>
@@ -270,7 +270,7 @@ export default function ReportsPage() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-6">
               <div className="text-center">
-                <div className="text-lg font-mono font-bold text-[hsl(45,90%,50%)]">
+                <div className="text-lg font-mono font-bold text-[hsl(43,25%,55%)]">
                   {REPORTS.length}
                 </div>
                 <div className="text-[9px] font-mono text-[hsl(0,0%,40%)] uppercase">

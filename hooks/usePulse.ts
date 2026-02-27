@@ -175,7 +175,38 @@ export function usePulse(publicKeyBase64: string): UsePulseReturn {
     connect()
   }, [connect])
 
-  // ── Initialize connection and heartbeat monitor ───────────────
+  // ── Initial hydration: fetch last 5 snapshots from DB ────────
+  useEffect(() => {
+    async function hydrateFromDB() {
+      try {
+        const res = await fetch("/api/v1/snapshots?limit=5")
+        if (res.ok) {
+          const data = await res.json()
+          if (data.snapshots && data.snapshots.length > 0) {
+            // Verify and set the most recent snapshot
+            const latest = data.snapshots[0] as SRISnapshot
+            if (latest && latest.integrity_hash) {
+              const result = await verifySnapshot(latest, publicKeyBase64)
+              if (result.ok) {
+                saveVerifiedSnapshot(latest)
+                setSnapshot(latest)
+                setSystemState("LIVE")
+              }
+            }
+          }
+        }
+      } catch {
+        // Hydration failed - will rely on SSE
+      }
+    }
+    
+    // Only hydrate if we don't have a snapshot yet
+    if (!snapshot) {
+      hydrateFromDB()
+    }
+  }, [publicKeyBase64, snapshot])
+
+  // ── Initialize SSE connection and heartbeat monitor ─────────
   useEffect(() => {
     connect()
 

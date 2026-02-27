@@ -158,12 +158,12 @@ export default function SimulationsPage() {
         {/* Header */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-[hsl(0,0%,4%)] border border-[hsl(0,0%,12%)] rounded-full mb-6">
-            <FlaskConical className="w-4 h-4 text-[hsl(45,90%,50%)]" />
+            <FlaskConical className="w-4 h-4 text-[hsl(43,25%,55%)]" />
             <span className="text-[10px] font-mono tracking-wider text-[hsl(0,0%,60%)]">
               STRESS TESTING
             </span>
           </div>
-          <h1 className="text-3xl font-mono font-bold text-[hsl(45,20%,95%)] mb-4">
+          <h1 className="text-3xl font-mono font-bold text-[hsl(0,0%,90%)] mb-4">
             SHOCK SIMULATIONS
           </h1>
           <p className="text-sm font-mono text-[hsl(0,0%,50%)]">
@@ -191,7 +191,7 @@ export default function SimulationsPage() {
                     className={`
                       px-3 py-2 text-[10px] font-mono rounded border transition-all
                       ${params.shockType === type
-                        ? "bg-[hsl(45,90%,50%)]/10 border-[hsl(45,90%,50%)]/30 text-[hsl(45,90%,50%)]"
+                        ? "bg-[hsl(43,25%,55%)]/10 border-[hsl(43,25%,55%)]/30 text-[hsl(43,25%,55%)]"
                         : "bg-[hsl(0,0%,3%)] border-[hsl(0,0%,10%)] text-[hsl(0,0%,50%)] hover:border-[hsl(0,0%,20%)]"
                       }
                     `}
@@ -208,7 +208,7 @@ export default function SimulationsPage() {
                 <label className="text-[10px] font-mono text-[hsl(0,0%,40%)] uppercase">
                   Magnitude
                 </label>
-                <span className="text-sm font-mono text-[hsl(45,90%,50%)]">
+                <span className="text-sm font-mono text-[hsl(43,25%,55%)]">
                   {params.magnitude.toFixed(1)}x
                 </span>
               </div>
@@ -219,7 +219,7 @@ export default function SimulationsPage() {
                 step="0.1"
                 value={params.magnitude}
                 onChange={(e) => setParams({ ...params, magnitude: parseFloat(e.target.value) })}
-                className="w-full h-2 bg-[hsl(0,0%,10%)] rounded-lg appearance-none cursor-pointer accent-[hsl(45,90%,50%)]"
+                className="w-full h-2 bg-[hsl(0,0%,10%)] rounded-lg appearance-none cursor-pointer accent-[hsl(43,25%,55%)]"
               />
               <div className="flex justify-between text-[9px] font-mono text-[hsl(0,0%,30%)] mt-1">
                 <span>0.1x</span>
@@ -233,7 +233,7 @@ export default function SimulationsPage() {
                 <label className="text-[10px] font-mono text-[hsl(0,0%,40%)] uppercase">
                   Duration (Days)
                 </label>
-                <span className="text-sm font-mono text-[hsl(45,90%,50%)]">
+                <span className="text-sm font-mono text-[hsl(43,25%,55%)]">
                   {params.duration}d
                 </span>
               </div>
@@ -244,7 +244,7 @@ export default function SimulationsPage() {
                 step="7"
                 value={params.duration}
                 onChange={(e) => setParams({ ...params, duration: parseInt(e.target.value) })}
-                className="w-full h-2 bg-[hsl(0,0%,10%)] rounded-lg appearance-none cursor-pointer accent-[hsl(45,90%,50%)]"
+                className="w-full h-2 bg-[hsl(0,0%,10%)] rounded-lg appearance-none cursor-pointer accent-[hsl(43,25%,55%)]"
               />
             </div>
 
@@ -269,9 +269,9 @@ export default function SimulationsPage() {
                         ...params, 
                         [`${comp}Delta`]: parseFloat(e.target.value) 
                       })}
-                      className="flex-1 h-1.5 bg-[hsl(0,0%,10%)] rounded-lg appearance-none cursor-pointer accent-[hsl(45,90%,50%)]"
+                      className="flex-1 h-1.5 bg-[hsl(0,0%,10%)] rounded-lg appearance-none cursor-pointer accent-[hsl(43,25%,55%)]"
                     />
-                    <span className="text-[10px] font-mono text-[hsl(45,90%,50%)] w-12 text-right">
+                    <span className="text-[10px] font-mono text-[hsl(43,25%,55%)] w-12 text-right">
                       {((params[`${comp}Delta` as keyof SimulationParams] as number) * 100).toFixed(0)}%
                     </span>
                   </div>
@@ -284,7 +284,7 @@ export default function SimulationsPage() {
               <button
                 onClick={runSimulation}
                 disabled={running}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-[hsl(45,90%,50%)] text-[hsl(0,0%,2%)] font-mono text-sm font-medium rounded hover:bg-[hsl(45,90%,55%)] transition-colors disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-[hsl(43,25%,55%)] text-[hsl(0,0%,2%)] font-mono text-sm font-medium rounded hover:bg-[hsl(45,90%,55%)] transition-colors disabled:opacity-50"
               >
                 <Play className="w-4 h-4" />
                 {running ? "RUNNING..." : "RUN SIMULATION"}
@@ -317,7 +317,7 @@ export default function SimulationsPage() {
                 <div className="grid grid-cols-3 gap-4">
                   <div className="text-center p-4 bg-[hsl(0,0%,3%)] rounded border border-[hsl(0,0%,10%)]">
                     <div className="text-[10px] font-mono text-[hsl(0,0%,40%)] mb-2">ORIGINAL</div>
-                    <div className="text-2xl font-mono font-bold text-[hsl(45,20%,95%)]">
+                    <div className="text-2xl font-mono font-bold text-[hsl(0,0%,90%)]">
                       {result.originalSri.toFixed(4)}
                     </div>
                   </div>
@@ -346,15 +346,15 @@ export default function SimulationsPage() {
                     ? "bg-[hsl(0,72%,51%)]/10 border-[hsl(0,72%,51%)]/20" 
                     : result.delta > 0.05
                       ? "bg-[hsl(142,76%,46%)]/10 border-[hsl(142,76%,46%)]/20"
-                      : "bg-[hsl(45,90%,50%)]/10 border-[hsl(45,90%,50%)]/20"
+                      : "bg-[hsl(43,25%,55%)]/10 border-[hsl(43,25%,55%)]/20"
                 }`}>
                   <div className="flex items-center gap-2">
                     <AlertTriangle className={`w-4 h-4 ${
                       result.delta < -0.05 ? "text-[hsl(0,72%,51%)]" : 
                       result.delta > 0.05 ? "text-[hsl(142,76%,46%)]" : 
-                      "text-[hsl(45,90%,50%)]"
+                      "text-[hsl(43,25%,55%)]"
                     }`} />
-                    <span className="text-sm font-mono text-[hsl(45,20%,95%)]">
+                    <span className="text-sm font-mono text-[hsl(0,0%,90%)]">
                       {result.riskChange}
                     </span>
                   </div>
@@ -374,7 +374,7 @@ export default function SimulationsPage() {
                         </span>
                         <div className="flex-1 h-2 bg-[hsl(0,0%,10%)] rounded-full overflow-hidden">
                           <div 
-                            className="h-full bg-[hsl(45,90%,50%)] transition-all duration-500"
+                            className="h-full bg-[hsl(43,25%,55%)] transition-all duration-500"
                             style={{ width: `${values.after * 100}%` }}
                           />
                         </div>

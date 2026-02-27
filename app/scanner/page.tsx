@@ -36,16 +36,24 @@ export default function ScannerPage() {
   const [results, setResults] = useState<VerificationResult[]>([])
   const [copied, setCopied] = useState<string | null>(null)
 
-  // Fetch latest snapshot
+  // Fetch latest snapshot from DB or session
   const fetchSnapshot = async () => {
     setLoading(true)
     try {
-      const res = await fetch("/api/v1/keys")
+      // First try session storage
+      const stored = sessionStorage.getItem("bobikcs_last_verified_snapshot")
+      if (stored) {
+        setSnapshot(JSON.parse(stored))
+        setLoading(false)
+        return
+      }
+      
+      // Otherwise fetch from API
+      const res = await fetch("/api/v1/snapshots?limit=1")
       if (res.ok) {
-        // Just verify we have keys, then get snapshot from session or API
-        const stored = sessionStorage.getItem("bobikcs_last_verified_snapshot")
-        if (stored) {
-          setSnapshot(JSON.parse(stored))
+        const data = await res.json()
+        if (data.snapshots && data.snapshots.length > 0) {
+          setSnapshot(data.snapshots[0])
         }
       }
     } catch (err) {
@@ -147,12 +155,12 @@ export default function ScannerPage() {
         {/* Header */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-[hsl(0,0%,4%)] border border-[hsl(0,0%,12%)] rounded-full mb-6">
-            <Shield className="w-4 h-4 text-[hsl(45,90%,50%)]" />
+            <Shield className="w-4 h-4 text-[hsl(43,25%,55%)]" />
             <span className="text-[10px] font-mono tracking-wider text-[hsl(0,0%,60%)]">
               INTEGRITY SCANNER
             </span>
           </div>
-          <h1 className="text-3xl font-mono font-bold text-[hsl(45,20%,95%)] mb-4">
+          <h1 className="text-3xl font-mono font-bold text-[hsl(0,0%,90%)] mb-4">
             CRYPTOGRAPHIC AUDIT
           </h1>
           <p className="text-sm font-mono text-[hsl(0,0%,50%)]">
@@ -162,19 +170,19 @@ export default function ScannerPage() {
 
         {loading ? (
           <div className="text-center py-20">
-            <RefreshCw className="w-8 h-8 text-[hsl(45,90%,50%)] animate-spin mx-auto mb-4" />
+            <RefreshCw className="w-8 h-8 text-[hsl(43,25%,55%)] animate-spin mx-auto mb-4" />
             <p className="text-sm font-mono text-[hsl(0,0%,50%)]">Loading snapshot data...</p>
           </div>
         ) : !snapshot ? (
           <div className="text-center py-20 bg-[hsl(0,0%,4%)] border border-[hsl(0,0%,12%)] rounded-lg">
             <Shield className="w-12 h-12 text-[hsl(0,0%,30%)] mx-auto mb-4" />
-            <h2 className="text-lg font-mono text-[hsl(45,20%,95%)] mb-2">No Snapshot Available</h2>
+            <h2 className="text-lg font-mono text-[hsl(0,0%,90%)] mb-2">No Snapshot Available</h2>
             <p className="text-xs font-mono text-[hsl(0,0%,50%)] mb-6">
               Visit the Intelligence page first to receive verified data
             </p>
             <a
               href="/intelligence"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-[hsl(45,90%,50%)] text-[hsl(0,0%,2%)] font-mono text-sm rounded"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[hsl(43,25%,55%)] text-[hsl(0,0%,2%)] font-mono text-sm rounded"
             >
               <LinkIcon className="w-4 h-4" />
               GO TO INTELLIGENCE
@@ -188,7 +196,7 @@ export default function ScannerPage() {
                 <h2 className="text-sm font-mono text-[hsl(0,0%,50%)] uppercase tracking-wider">
                   Current Snapshot
                 </h2>
-                <span className="text-xs font-mono text-[hsl(45,90%,50%)]">
+                <span className="text-xs font-mono text-[hsl(43,25%,55%)]">
                   v{snapshot.version}
                 </span>
               </div>
@@ -196,13 +204,13 @@ export default function ScannerPage() {
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <div className="text-[10px] font-mono text-[hsl(0,0%,40%)] mb-2">SRI VALUE</div>
-                  <div className="text-3xl font-mono font-bold text-[hsl(45,90%,50%)]">
+                  <div className="text-3xl font-mono font-bold text-[hsl(43,25%,55%)]">
                     {snapshot.sri_value.toFixed(4)}
                   </div>
                 </div>
                 <div>
                   <div className="text-[10px] font-mono text-[hsl(0,0%,40%)] mb-2">CALCULATED AT</div>
-                  <div className="text-sm font-mono text-[hsl(45,20%,95%)]">
+                  <div className="text-sm font-mono text-[hsl(0,0%,90%)]">
                     {snapshot.calculated_at}
                   </div>
                 </div>
@@ -220,7 +228,7 @@ export default function ScannerPage() {
                 <div className="p-4 bg-[hsl(0,0%,3%)] rounded border border-[hsl(0,0%,10%)]">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <Hash className="w-4 h-4 text-[hsl(45,90%,50%)]" />
+                      <Hash className="w-4 h-4 text-[hsl(43,25%,55%)]" />
                       <span className="text-[10px] font-mono text-[hsl(0,0%,50%)] uppercase">Integrity Hash</span>
                     </div>
                     <button
@@ -234,7 +242,7 @@ export default function ScannerPage() {
                       )}
                     </button>
                   </div>
-                  <code className="text-[11px] font-mono text-[hsl(45,20%,95%)] break-all">
+                  <code className="text-[11px] font-mono text-[hsl(0,0%,90%)] break-all">
                     {snapshot.integrity_hash}
                   </code>
                 </div>
@@ -243,7 +251,7 @@ export default function ScannerPage() {
                 <div className="p-4 bg-[hsl(0,0%,3%)] rounded border border-[hsl(0,0%,10%)]">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <Key className="w-4 h-4 text-[hsl(45,90%,50%)]" />
+                      <Key className="w-4 h-4 text-[hsl(43,25%,55%)]" />
                       <span className="text-[10px] font-mono text-[hsl(0,0%,50%)] uppercase">Ed25519 Signature</span>
                     </div>
                     <button
@@ -257,7 +265,7 @@ export default function ScannerPage() {
                       )}
                     </button>
                   </div>
-                  <code className="text-[11px] font-mono text-[hsl(45,20%,95%)] break-all">
+                  <code className="text-[11px] font-mono text-[hsl(0,0%,90%)] break-all">
                     {snapshot.signature}
                   </code>
                 </div>
@@ -265,10 +273,10 @@ export default function ScannerPage() {
                 {/* Previous Hash */}
                 <div className="p-4 bg-[hsl(0,0%,3%)] rounded border border-[hsl(0,0%,10%)]">
                   <div className="flex items-center gap-2 mb-2">
-                    <FileText className="w-4 h-4 text-[hsl(45,90%,50%)]" />
+                    <FileText className="w-4 h-4 text-[hsl(43,25%,55%)]" />
                     <span className="text-[10px] font-mono text-[hsl(0,0%,50%)] uppercase">Previous Hash (Chain)</span>
                   </div>
-                  <code className="text-[11px] font-mono text-[hsl(45,20%,95%)] break-all">
+                  <code className="text-[11px] font-mono text-[hsl(0,0%,90%)] break-all">
                     {snapshot.prev_hash}
                   </code>
                 </div>
@@ -284,7 +292,7 @@ export default function ScannerPage() {
                 <button
                   onClick={runVerification}
                   disabled={verifying}
-                  className="flex items-center gap-2 px-4 py-2 bg-[hsl(45,90%,50%)] text-[hsl(0,0%,2%)] font-mono text-sm rounded hover:bg-[hsl(45,90%,55%)] transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2 bg-[hsl(43,25%,55%)] text-[hsl(0,0%,2%)] font-mono text-sm rounded hover:bg-[hsl(43,25%,45%)] transition-colors disabled:opacity-50"
                 >
                   {verifying ? (
                     <RefreshCw className="w-4 h-4 animate-spin" />
@@ -322,7 +330,7 @@ export default function ScannerPage() {
                         {result.status === "error" && (
                           <ShieldX className="w-5 h-5 text-[hsl(0,72%,51%)]" />
                         )}
-                        <span className="text-sm font-mono text-[hsl(45,20%,95%)]">
+                        <span className="text-sm font-mono text-[hsl(0,0%,90%)]">
                           {result.step}
                         </span>
                       </div>

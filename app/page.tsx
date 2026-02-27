@@ -20,11 +20,11 @@ function FeatureCard({
   description: string 
 }) {
   return (
-    <div className="group p-6 bg-[hsl(0,0%,4%)] border border-[hsl(0,0%,12%)] rounded-lg hover:border-[hsl(45,90%,50%)]/30 transition-all duration-300">
-      <div className="w-10 h-10 rounded bg-[hsl(45,90%,50%)]/10 flex items-center justify-center mb-4 group-hover:bg-[hsl(45,90%,50%)]/20 transition-colors">
-        <Icon className="w-5 h-5 text-[hsl(45,90%,50%)]" />
+    <div className="group p-6 bg-[hsl(0,0%,4%)] border border-[hsl(0,0%,12%)] rounded-lg hover:border-[hsl(43,25%,55%)]/30 transition-all duration-300">
+      <div className="w-10 h-10 rounded bg-[hsl(43,25%,55%)]/10 flex items-center justify-center mb-4 group-hover:bg-[hsl(43,25%,55%)]/20 transition-colors">
+        <Icon className="w-5 h-5 text-[hsl(43,25%,55%)]" />
       </div>
-      <h3 className="text-sm font-mono tracking-wide text-[hsl(45,20%,95%)] mb-2">
+      <h3 className="text-sm font-mono tracking-wide text-[hsl(0,0%,90%)] mb-2">
         {title}
       </h3>
       <p className="text-xs font-mono text-[hsl(0,0%,50%)] leading-relaxed">
@@ -41,7 +41,7 @@ function FeatureCard({
 function StatCard({ value, label }: { value: string; label: string }) {
   return (
     <div className="text-center">
-      <div className="text-3xl md:text-4xl font-mono font-bold text-[hsl(45,90%,50%)] mb-1">
+      <div className="text-3xl md:text-4xl font-mono font-bold text-[hsl(43,25%,55%)] mb-1">
         {value}
       </div>
       <div className="text-[10px] font-mono tracking-wider text-[hsl(0,0%,50%)] uppercase">
@@ -60,7 +60,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-[hsl(0,0%,2%)]">
       {/* Hero Section */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-[hsl(45,90%,50%)]/5 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[hsl(43,25%,55%)]/5 via-transparent to-transparent" />
         
         <div className="relative max-w-5xl mx-auto px-6 pt-24 pb-20">
           <div className="flex justify-center mb-8">
@@ -73,10 +73,10 @@ export default function LandingPage() {
           </div>
           
           <h1 className="text-center mb-6">
-            <span className="block text-4xl md:text-5xl lg:text-6xl font-mono font-bold tracking-tight text-[hsl(45,20%,95%)] mb-4">
+            <span className="block text-4xl md:text-5xl lg:text-6xl font-mono font-bold tracking-tight text-[hsl(0,0%,90%)] mb-4">
               STRUCTURAL CORE
             </span>
-            <span className="block text-lg md:text-xl font-mono text-[hsl(45,90%,50%)]">
+            <span className="block text-lg md:text-xl font-mono text-[hsl(43,25%,55%)]">
               Institutional Intelligence Infrastructure
             </span>
           </h1>
@@ -89,7 +89,7 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               href="/intelligence"
-              className="flex items-center gap-2 px-6 py-3 bg-[hsl(45,90%,50%)] text-[hsl(0,0%,2%)] font-mono text-sm font-medium rounded hover:bg-[hsl(45,90%,55%)] transition-colors"
+              className="flex items-center gap-2 px-6 py-3 bg-[hsl(43,25%,55%)] text-[hsl(0,0%,2%)] font-mono text-sm font-medium rounded hover:bg-[hsl(43,25%,45%)] transition-colors"
             >
               <Activity className="w-4 h-4" />
               <span>VIEW INTELLIGENCE</span>
@@ -97,7 +97,7 @@ export default function LandingPage() {
             </Link>
             <Link
               href="/scanner"
-              className="flex items-center gap-2 px-6 py-3 bg-[hsl(0,0%,4%)] border border-[hsl(0,0%,12%)] text-[hsl(45,20%,95%)] font-mono text-sm rounded hover:border-[hsl(45,90%,50%)]/30 transition-colors"
+              className="flex items-center gap-2 px-6 py-3 bg-[hsl(0,0%,4%)] border border-[hsl(0,0%,12%)] text-[hsl(0,0%,90%)] font-mono text-sm rounded hover:border-[hsl(43,25%,55%)]/30 transition-colors"
             >
               <Shield className="w-4 h-4" />
               <span>VERIFY INTEGRITY</span>
@@ -121,7 +121,7 @@ export default function LandingPage() {
       {/* Features Section */}
       <section className="max-w-5xl mx-auto px-6 py-20">
         <div className="text-center mb-12">
-          <h2 className="text-2xl font-mono font-bold text-[hsl(45,20%,95%)] mb-4">
+          <h2 className="text-2xl font-mono font-bold text-[hsl(0,0%,90%)] mb-4">
             INSTITUTIONAL GRADE
           </h2>
           <p className="text-sm font-mono text-[hsl(0,0%,50%)]">
@@ -158,7 +158,7 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto px-6 py-20">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 className="text-2xl font-mono font-bold text-[hsl(45,20%,95%)] mb-6">
+              <h2 className="text-2xl font-mono font-bold text-[hsl(0,0%,90%)] mb-6">
                 VERIFICATION PIPELINE
               </h2>
               <div className="space-y-4">
@@ -171,7 +171,7 @@ export default function LandingPage() {
                   "State machine transition (LIVE/DEGRADED/UNTRUSTED)",
                 ].map((step, idx) => (
                   <div key={idx} className="flex items-start gap-3">
-                    <CheckCircle className="w-4 h-4 text-[hsl(45,90%,50%)] mt-0.5 flex-shrink-0" />
+                    <CheckCircle className="w-4 h-4 text-[hsl(43,25%,55%)] mt-0.5 flex-shrink-0" />
                     <span className="text-xs font-mono text-[hsl(0,0%,60%)]">{step}</span>
                   </div>
                 ))}
@@ -180,7 +180,7 @@ export default function LandingPage() {
             
             <div className="bg-[hsl(0,0%,4%)] border border-[hsl(0,0%,12%)] rounded-lg p-6">
               <div className="text-[10px] font-mono text-[hsl(0,0%,40%)] mb-4">CANONICAL FORMAT</div>
-              <pre className="text-[11px] font-mono text-[hsl(45,90%,50%)] leading-relaxed overflow-x-auto">
+              <pre className="text-[11px] font-mono text-[hsl(43,25%,55%)] leading-relaxed overflow-x-auto">
 {`"{version}|{ts}|{sri}|{spread}|
 {inflation}|{rate}|{liquidity}|
 {prev_hash}"`}
@@ -202,7 +202,7 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto px-6 py-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-6 h-6 rounded bg-[hsl(45,90%,50%)] flex items-center justify-center">
+              <div className="w-6 h-6 rounded bg-[hsl(43,25%,55%)] flex items-center justify-center">
                 <span className="text-[hsl(0,0%,2%)] font-mono font-bold text-[10px]">SC</span>
               </div>
               <span className="text-[10px] font-mono tracking-wider text-[hsl(0,0%,40%)]">

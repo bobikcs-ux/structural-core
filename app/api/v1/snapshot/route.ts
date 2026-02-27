@@ -24,12 +24,8 @@ import { encodeBase64 } from "tweetnacl-util"
 
 export const runtime = "edge"
 
-export async function GET(req: Request) {
-  // ── SECURITY: Verify cron secret header ─────────────────────────
-  const cronSecret = req.headers.get("x-cron-secret")
-  if (cronSecret !== process.env.CRON_SECRET) {
-    return new Response("UNAUTHORIZED", { status: 401 })
-  }
+// Shared handler for both GET (cron) and POST (manual trigger)
+async function handleSnapshotCreation() {
 
   // ── Initialize Supabase client ──────────────────────────────────
   const supabase = createClient(
@@ -138,4 +134,36 @@ export async function GET(req: Request) {
     hash: integrityHash,
     timestamp: ts,
   })
+}
+
+// ── GET: Cron-triggered (requires CRON_SECRET) ──────────────────────
+export async function GET(req: Request) {
+  const cronSecret = req.headers.get("x-cron-secret")
+  if (cronSecret !== process.env.CRON_SECRET) {
+    return new Response("UNAUTHORIZED", { status: 401 })
+  }
+  return handleSnapshotCreation()
+}
+
+// ── POST: Manual trigger from console (requires ADMIN_SECRET) ──────
+export async function POST(req: Request) {
+  // Allow authorization via header or body
+  const authHeader = req.headers.get("x-admin-secret")
+  let bodySecret: string | null = null
+  
+  try {
+    const body = await req.json().catch(() => ({}))
+    bodySecret = body?.adminSecret || null
+  } catch {
+    // No body provided
+  }
+  
+  const adminSecret = process.env.ADMIN_SECRET || process.env.CRON_SECRET
+  const providedSecret = authHeader || bodySecret
+  
+  if (providedSecret !== adminSecret) {
+    return new Response("UNAUTHORIZED", { status: 401 })
+  }
+  
+  return handleSnapshotCreation()
 }

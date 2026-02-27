@@ -85,29 +85,29 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: hsl(220 20% 6%);
+  background: hsl(0 0% 4%);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(220 15% 25%);
+  background: hsl(0 0% 15%);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(220 15% 35%);
+  background: hsl(0 0% 20%);
 }
 
-/* Glow effects */
+/* Glow effects - muted for institutional feel */
 .glow-green {
-  box-shadow: 0 0 20px hsl(142 76% 46% / 0.15);
+  box-shadow: 0 0 15px hsl(142 50% 40% / 0.1);
 }
 
-.glow-amber {
-  box-shadow: 0 0 20px hsl(45 93% 47% / 0.15);
+.glow-gold {
+  box-shadow: 0 0 15px hsl(43 25% 55% / 0.1);
 }
 
 .glow-red {
-  box-shadow: 0 0 20px hsl(0 72% 51% / 0.15);
+  box-shadow: 0 0 15px hsl(0 60% 45% / 0.1);
 }
 
 /* Sparkline animation */
