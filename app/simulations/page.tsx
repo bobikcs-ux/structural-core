@@ -5,7 +5,7 @@
  * Run stress tests on SRI components
  */
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { 
   FlaskConical, 
   Play, 
@@ -13,7 +13,8 @@ import {
   TrendingDown,
   TrendingUp,
   AlertTriangle,
-  Gauge
+  Gauge,
+  RefreshCw
 } from "lucide-react"
 
 // ============================================================================
@@ -57,7 +58,8 @@ const SHOCK_PRESETS: Record<ShockType, Partial<SimulationParams>> = {
   CUSTOM: { spreadDelta: 0, inflationDelta: 0, rateDelta: 0, liquidityDelta: 0 },
 }
 
-const BASE_VALUES = {
+// Default values (used as fallback)
+const DEFAULT_VALUES = {
   spread: 0.65,
   inflation: 0.55,
   rate: 0.45,
@@ -81,6 +83,34 @@ export default function SimulationsPage() {
   
   const [result, setResult] = useState<SimulationResult | null>(null)
   const [running, setRunning] = useState(false)
+  const [liveValues, setLiveValues] = useState(DEFAULT_VALUES)
+  const [loadingLive, setLoadingLive] = useState(true)
+
+  // Fetch real SRI values on mount
+  useEffect(() => {
+    async function fetchLiveSRI() {
+      try {
+        const res = await fetch("/api/v1/snapshot?mode=read")
+        if (res.ok) {
+          const data = await res.json()
+          if (data.snapshot) {
+            // Convert 0-100 scores to 0-1 scale
+            setLiveValues({
+              spread: (data.snapshot.spread_score || 65) / 100,
+              inflation: (data.snapshot.inflation_score || 55) / 100,
+              rate: (data.snapshot.rate_score || 45) / 100,
+              liquidity: (data.snapshot.liquidity_score || 70) / 100,
+            })
+          }
+        }
+      } catch {
+        // Use defaults on error
+      } finally {
+        setLoadingLive(false)
+      }
+    }
+    fetchLiveSRI()
+  }, [])
 
   const handleShockTypeChange = (type: ShockType) => {
     const preset = SHOCK_PRESETS[type]
@@ -100,11 +130,12 @@ export default function SimulationsPage() {
     await new Promise(r => setTimeout(r, 800))
 
     const magnitude = params.magnitude
+    // Use live values from the current SRI snapshot
     const before = {
-      spread: BASE_VALUES.spread,
-      inflation: BASE_VALUES.inflation,
-      rate: BASE_VALUES.rate,
-      liquidity: BASE_VALUES.liquidity,
+      spread: liveValues.spread,
+      inflation: liveValues.inflation,
+      rate: liveValues.rate,
+      liquidity: liveValues.liquidity,
     }
     
     const after = {

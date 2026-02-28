@@ -289,7 +289,7 @@ export async function GET(req: Request) {
   const url = new URL(req.url)
   const mode = url.searchParams.get("mode")
   
-  // mode=read: Only return existing snapshot
+  // mode=read: Only return existing snapshot (public, no auth)
   if (mode === "read") {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
     const { data, error } = await supabase
@@ -303,17 +303,40 @@ export async function GET(req: Request) {
       return Response.json({ 
         ok: false, 
         error: "No snapshots available",
-        hint: "Call GET without mode=read to generate initial data"
+        hint: "Call POST to generate initial data"
       }, { status: 404 })
     }
     
     return Response.json({ ok: true, snapshot: data })
   }
   
-  // Default: Generate new snapshot (allows initial data creation)
+  // CRON job generation: Requires CRON_SECRET header (set by Vercel)
+  const cronSecret = req.headers.get("x-vercel-cron-secret") || req.headers.get("authorization")
+  const expectedSecret = process.env.CRON_SECRET
+  
+  if (expectedSecret && cronSecret !== expectedSecret && cronSecret !== `Bearer ${expectedSecret}`) {
+    return Response.json({ 
+      ok: false, 
+      error: "Unauthorized. CRON_SECRET required for generation.",
+      hint: "Use mode=read to fetch existing data, or POST with valid auth to generate"
+    }, { status: 401 })
+  }
+  
   return generateSnapshot()
 }
 
-export async function POST() {
+export async function POST(req: Request) {
+  // POST requires either CRON_SECRET or ADMIN_SECRET for manual triggers
+  const authHeader = req.headers.get("x-admin-secret") || req.headers.get("authorization")
+  const adminSecret = process.env.ADMIN_SECRET || process.env.CRON_SECRET
+  
+  // Allow generation if no secrets configured (initial setup) or if secret matches
+  if (adminSecret && authHeader !== adminSecret && authHeader !== `Bearer ${adminSecret}`) {
+    return Response.json({ 
+      ok: false, 
+      error: "Unauthorized. Admin secret required for manual generation."
+    }, { status: 401 })
+  }
+  
   return generateSnapshot()
 }
