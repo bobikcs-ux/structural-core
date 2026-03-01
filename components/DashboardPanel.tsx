@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useState, useRef } from "react"
-import { Shield, ShieldCheck, Clock, Key, ExternalLink, Activity } from "lucide-react"
+import { Shield, ShieldCheck, Clock, Key, ExternalLink, Activity, Cpu, Database } from "lucide-react"
 import { SystemState, STATE_META, getRiskCategory, getRiskColor } from "@/lib/system-state"
 import type { SRISnapshot } from "@/lib/types"
 
@@ -316,6 +316,25 @@ export function DashboardPanel({ snapshot, systemState, history = [] }: Dashboar
               <span className="text-[10px] font-mono">
                 KEY: {snapshot.public_key_id}
               </span>
+            </div>
+            
+            {/* Source indicator */}
+            <div className="flex items-center gap-2">
+              {snapshot._source === "fallback" ? (
+                <div className="flex items-center gap-1.5 px-2 py-1 bg-amber-500/10 border border-amber-500/20 rounded">
+                  <Database className="h-3 w-3 text-amber-400" />
+                  <span className="text-[9px] font-mono uppercase text-amber-400">
+                    Source: 2026 Benchmarks
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 px-2 py-1 bg-[hsl(45,90%,50%)]/10 border border-[hsl(45,90%,50%)]/20 rounded">
+                  <Cpu className="h-3 w-3 text-[hsl(45,90%,50%)]" />
+                  <span className="text-[9px] font-mono uppercase text-[hsl(45,90%,50%)]">
+                    Source: Live Macro Kernel
+                  </span>
+                </div>
+              )}
             </div>
             
             {/* Verify link */}

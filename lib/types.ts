@@ -184,6 +184,13 @@ export interface SRISnapshot {
   signature: string
   public_key_id: string
   calculated_at: string  // "2026-02-25T08:00:00Z" — no ms
+  _source?: "live" | "fallback"  // Data provenance indicator
+  _benchmarks?: {  // Present when using fallback data
+    FED_FUNDS: number
+    CPI_INFLATION: number
+    YIELD_SPREAD: number
+    M2_GROWTH: number
+  }
 }
 
 // ============================================================================

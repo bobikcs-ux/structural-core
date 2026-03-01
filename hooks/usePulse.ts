@@ -143,7 +143,20 @@ export function usePulse(publicKeyBase64: string): UsePulseReturn {
           return
         }
         
-        const snap: SRISnapshot = JSON.parse(e.data)
+        const parsed = JSON.parse(e.data)
+        
+        // Handle wrapped response { type: "snapshot", data: {...} }
+        let snap: SRISnapshot
+        if (parsed && parsed.type === "snapshot" && parsed.data) {
+          snap = parsed.data as SRISnapshot
+        } else if (parsed && parsed.integrity_hash) {
+          // Direct snapshot format (backward compatibility)
+          snap = parsed as SRISnapshot
+        } else {
+          // Status message or unknown format
+          lastHeartbeat.current = Date.now()
+          return
+        }
         
         // Guard: ensure snap is a valid object with required fields
         if (!snap || typeof snap !== "object" || !snap.integrity_hash) {
