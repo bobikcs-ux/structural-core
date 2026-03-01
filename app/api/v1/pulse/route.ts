@@ -99,24 +99,25 @@ function generateFallbackSnapshot(): Record<string, unknown> {
 }
 
 /**
- * Fetches snapshot with timeout and fallback
+ * Fetches snapshot with timeout and fallback using Promise.race
  */
 async function fetchSnapshotWithTimeout(
   supabase: ReturnType<typeof createClient>
 ): Promise<{ data: Record<string, unknown> | null; source: "live" | "fallback" }> {
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
-  
   try {
-    const { data: snap } = await supabase
+    // Use Promise.race for timeout since Supabase doesn't support abortSignal
+    const timeoutPromise = new Promise<never>((_, reject) => 
+      setTimeout(() => reject(new Error("Timeout")), FETCH_TIMEOUT_MS)
+    )
+    
+    const queryPromise = supabase
       .from("global_state_snapshots")
       .select("*")
       .order("calculated_at", { ascending: false })
       .limit(1)
       .maybeSingle()
-      .abortSignal(controller.signal)
     
-    clearTimeout(timeoutId)
+    const { data: snap } = await Promise.race([queryPromise, timeoutPromise]) as { data: Record<string, unknown> | null }
     
     if (snap) {
       // Update cache with live data
@@ -127,8 +128,6 @@ async function fetchSnapshotWithTimeout(
     // No data in DB, return fallback
     return { data: generateFallbackSnapshot(), source: "fallback" }
   } catch {
-    clearTimeout(timeoutId)
-    
     // On timeout or error, check cache first, then fallback
     const cacheAge = Date.now() - cachedSnapshot.timestamp
     if (cachedSnapshot.data && cacheAge < CACHE_TTL_MS) {

@@ -146,12 +146,13 @@ export function usePulse(publicKeyBase64: string): UsePulseReturn {
         const parsed = JSON.parse(e.data)
         
         // Handle wrapped response { type: "snapshot", data: {...} }
-        let snap: SRISnapshot
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let snap: any
         if (parsed && parsed.type === "snapshot" && parsed.data) {
-          snap = parsed.data as SRISnapshot
+          snap = parsed.data
         } else if (parsed && parsed.integrity_hash) {
           // Direct snapshot format (backward compatibility)
-          snap = parsed as SRISnapshot
+          snap = parsed
         } else {
           // Status message or unknown format
           lastHeartbeat.current = Date.now()
@@ -164,7 +165,7 @@ export function usePulse(publicKeyBase64: string): UsePulseReturn {
           return
         }
         
-        onNewSnap(snap)
+        onNewSnap(snap as SRISnapshot)
       } catch (err) {
         // Don't set error for parse failures on heartbeats
         if (e.data && e.data !== "ping") {
